@@ -1,0 +1,1 @@
+from custom_bots.mybots import *

@@ -1,0 +1,32 @@
+{
+	
+	"population_size": 5, 
+	"max_number_dna": 1, 
+	"min_number_dna" : 1,
+	"max_number_genes": 3,
+	"min_number_genes" : 1,
+	"max_dna_data_delay" : 10,
+	"env" : "harbour_porpoise",
+	"data_location" : ["67149847"],
+	"number_generations" : 3,
+	"listen_delta_t" : 0.01,
+	"evaluation_class_name" : "IdentEvaluation",
+	"mutation_rate" : 0.7,
+	"creep_rate" : 0.01,
+	"x_over_rate" : 0.8,
+	"user" : "rdtandon",
+	"market" : "none",
+	"email" : "rdtandon@gmail.com",
+	"user_uid" : "rdtandon",
+	"scope" : "global",
+	"save_dir" : "bots/",
+	"n_fft" : 8192,
+	"factor" : 1
+	
+}
+
+
+
+
+
+

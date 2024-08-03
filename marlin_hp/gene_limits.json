@@ -1,0 +1,12 @@
+{
+            
+            "SubBandAlpha" : 0,
+            "EnergyFrequencyBound" : 1,
+            "EnergyFrequencyTemporalBound" : 5,
+            "max_memory":2000,
+            "delta_energy_min" : 0.06,
+            "delta_energy_max" : 0.11,
+            "f_min" : 135000,
+            "f_max" : 137000
+            
+    }
