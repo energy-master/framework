@@ -171,7 +171,12 @@ class SpeciesIdent(object):
         self.mode = 0
     
     def generation_reset(self):
+        print ("reseting generation data")
+        self.performance = None
         self.performance = performance.Performance()
+        self.performance.showBotDecisions()
+        print ("reseting generation data...done")
+        
     
        
     def run(self):
@@ -382,7 +387,6 @@ if not data_avail:
     with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{s_id}.da', 'wb') as f:  # open a text file
         pickle.dump(data_adapter.derived_data, f) # serialize the list
 
-# set simulation data feed
 
 
 
@@ -392,6 +396,11 @@ if data_avail:
         data_adapter.derived_data = None
         tmp_derived_data = pickle.load(f) 
         data_adapter.derived_data = tmp_derived_data
+
+# set simulation data feed
+print (f'max e: {data_adapter.derived_data.max_energy}')
+print (f'min e : {data_adapter.derived_data.min_energy}')
+print (f'max avg e : {data_adapter.derived_data.max_avg_energy}')
 
 
 # print (data_adapter.derived_data)

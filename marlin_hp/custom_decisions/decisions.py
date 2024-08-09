@@ -33,34 +33,40 @@ class IdentEvaluation(EvaluateDecisions):
         EvaluateDecisions.__init__(self,bot=bot, botPerformance=BotPerformance)
         self.decision_summary = None
         self.fitnessValue = 0.0
+        
+        
     def evaluateFitness(self):
         # print ("custom eval")
         fitness_value = 0.0
         if self.botPerformance == None:
+            # no decisions made
             self.fitnessValue = 0.0
-            print ("none bot performance")
-            return
+            # print (f'{self.bot.name} made no decisions.')
+            return None
 
-
+        # print (f'{self.bot.name} made some decisions.')
+        number_profiles = 0
         for epochTag, epoch in self.botPerformance.PerformanceHolder.items():
             for decision_profile in epoch.DecisionProfiles:
                 if decision_profile.Status == "Closed":
+                    number_profiles += 1
                     # print ("closed")
                     fitness_value += self.getDecisionProfileFitness(decision_profile)
                     # print (fitness_value)
-            
+        #print (f'final fitness : {fitness_value} | {number_profiles} | {self.bot.name}')
         self.fitnessValue = fitness_value
         return fitness_value
 
 
     def getDecisionProfileFitness(self, decisionProfile : DecisionProfile = None):
+        
         xr_total = 0
         winners = 0
         losers = 0
         if decisionProfile is not None:
             for decision in decisionProfile.DecisionList:
                 if (decision.Decision == "Idle"):
-                    # print (decision.xr)
+                    #print (decision.xr)
                     if decision.xr == True:
                         xr_total += 1
                         winners += 1
@@ -70,6 +76,6 @@ class IdentEvaluation(EvaluateDecisions):
                     
         # ratio = float(winners/(winners+losers))
         # print (ratio, xr_total, winners, losers)
-        
+        # print (f'tally : {xr_total}')
         # return ratio
         return xr_total

@@ -65,20 +65,15 @@ class EnergyFrequencyBound(ConditionalRoot):
     energy_value = derived_data.query_energy_frames_at_frequency_bounds(self.lower_frequency,self.upper_frequency,iter_start_time)
     avg_energy = abs(energy_value[1])
     avg_db = (energy_value[2])
-    # print (iter_start_time)
-    
-    # print (f'energy : {avg_energy} db: {avg_db}')
-    
-    
+   
     self.Start()
     self.state = 0
 
-    
     # print (f'avg e : {avg_energy} {self.lower_frequency} - {self.upper_frequency}')
     # print (f'avg e : {avg_energy} {self.lower_frequency} - {self.upper_frequency}')
     if avg_energy == 0:
       print (f'avg e : {avg_energy} {self.lower_frequency} - {self.upper_frequency}')
-      # exit()
+      exit()
 
     if len(data) > 0:
         # print (avg_energy)
@@ -92,8 +87,6 @@ class EnergyFrequencyBound(ConditionalRoot):
             return 1
 
         return 0
-
-
 
     return 0
   

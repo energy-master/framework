@@ -3,6 +3,10 @@ import librosa.display
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+
+from scipy import signal
+from scipy.fft import fftshift
+
 """
     Game level utils
 """
@@ -32,34 +36,60 @@ def get_bin_f(librosa_f_bins, freq_lower, freq_end):
     
 
 def build_spec(data,  id, bot_id):
+    print ("building spec")
     y = data.frequency_ts_np * 40
     n_fft = 8192
-    D = librosa.stft(y, n_fft=n_fft,hop_length = n_fft // 2)  # STFT of y
-    S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max,amin=20)
-    # S_db = np.abs(D)
     sample_rate = data.meta_data['sample_rate']
-    print (S_db[len(S_db)-1])
+    # f, t, Sxx = signal.spectrogram(y, fs=sample_rate, window=('hamming'), nperseg=1000, noverlap=500, nfft=n_fft, detrend = 'constant', return_onesided=True, scaling='density', axis=-1, mode='psd')
+    # dB = librosa.amplitude_to_db((Sxx)) #get magnitude of signal and convert to dB
+    # plt.pcolormesh(t, f, dB, shading='gouraud')
+    
+    # plt.colorbar()
+   
+    print ("build")
+    plt.specgram(y,NFFT=n_fft, Fs=sample_rate, scale="dB",mode="magnitude",cmap="ocean")
+    print ("done")
+    plt.ylabel('Frequency [Hz]')
+    plt.xlabel('Time [sec]')
+    # f, t, Sxx = signal.spectrogram(y, fs=sample_rate, nfft=n_fft)
+    # librosa.display.specshow(Sxx, sr=sample_rate, y_axis='linear', x_axis='time')
+    # # print ("spec built")
+    # # plt.pcolormesh(t, f, Sxx, shading='gouraud')
+    # print ("color mesh built")
+    # plt.ylabel('Frequency [Hz]')
+
+   
     snapshot_id =  data.meta_data['snapshot_id']
     filepath = f'/home/vixen/html/rs/ident_app/ident/brahma/out/{snapshot_id}_{bot_id}_main_spec.png'
-   
-   
-    
-    plt.figure(figsize=(12, 5))
-    librosa.display.specshow(S_db, sr=sample_rate, y_axis='linear', x_axis='time')
-    # tick_frames = librosa.time_to_frames(np.arange(1, 6))
-    # plt.xlim([0, tick_frames[-1]])
-
-    freqs = librosa.fft_frequencies()
-    print (freqs)
-    max_bin = np.flatnonzero(freqs >= 2000)[0]
-    min_bin = np.flatnonzero(freqs <= 100000)[0]
-    
-    plt.ylim([0, 145000])
-    
-    # librosa.display.time_ticks(tick_frames, librosa.frames_to_time(tick_frames))
-    plt.xlabel('Time')
-    plt.ylabel('Hz')
     plt.savefig(filepath)
+    
+    # plt.show()
+    # D = librosa.stft(y, n_fft=n_fft,hop_length = n_fft // 2)  # STFT of y
+    # S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max,amin=20)
+    # # S_db = np.abs(D)
+    # sample_rate = data.meta_data['sample_rate']
+    # print (S_db[len(S_db)-1])
+    # snapshot_id =  data.meta_data['snapshot_id']
+    # filepath = f'/home/vixen/html/rs/ident_app/ident/brahma/out/{snapshot_id}_{bot_id}_main_spec.png'
+   
+   
+    
+    # plt.figure(figsize=(12, 5))
+    # librosa.display.specshow(S_db, sr=sample_rate, y_axis='linear', x_axis='time')
+    # # tick_frames = librosa.time_to_frames(np.arange(1, 6))
+    # # plt.xlim([0, tick_frames[-1]])
+
+    # freqs = librosa.fft_frequencies()
+    # print (freqs)
+    # max_bin = np.flatnonzero(freqs >= 2000)[0]
+    # min_bin = np.flatnonzero(freqs <= 100000)[0]
+    
+    # plt.ylim([0, 145000])
+    
+    # # librosa.display.time_ticks(tick_frames, librosa.frames_to_time(tick_frames))
+    # plt.xlabel('Time')
+    # plt.ylabel('Hz')
+    # plt.savefig(filepath)
     
     
     

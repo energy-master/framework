@@ -5,7 +5,8 @@ import math
 import json
 import random
 import os, sys
-
+import time
+from rich.progress import Progress
 from utils import *
 
 # brahma
@@ -28,7 +29,7 @@ from custom_decisions import *
 from custom_decisions import IdentEvaluation
 
 gene_limits = None
-with open("gene_limits.json", 'r') as config_f:
+with open("/home/vixen/rs/dev/marlin_hp/marlin_hp/gene_limits.json", 'r') as config_f:
     gene_limits = json.load(config_f)
 
 print (gene_limits)
@@ -54,9 +55,11 @@ class IdentGame(object):
             #data_feed.reset()
             
             for env_pressure in self.game.data_feed:
-                
+                pressure_start = time.time()
+                file_out = False
                 #-- build spec
                 if self.game.mode == 1:
+                    file_out = True
                     print ("building image data")
                     build_f_profile(env_pressure, self.game_id, bot.name)
                     build_spec(env_pressure, self.game_id,  bot.name)
@@ -99,15 +102,19 @@ class IdentGame(object):
                     iter_start_time =  env_pressure.start_time + timedelta(milliseconds=_s)
                     _s = (slice_end / env_pressure.meta_data['sample_rate']) * 1000
                     iter_end_time   =  env_pressure.start_time  + timedelta(milliseconds=_s)
-                    print (f'time vector bounds : {iter_start_time} : {iter_end_time}')
+                    #print (f'time vector bounds : {iter_start_time} : {iter_end_time}')
                     
                     # print (f'DMM input vector size: {listen_delta_idx}')
                     # --- express bot ---
                     # [nb. data structure is passed to individual genes if dna is initialised.
                     # extra data can be added under 'init_data' field]
+                    express_start = time.time()
                     express_value = bot.ExpressDNA(data = {'data_index':listen_start_idx, 'sample_rate' : env_pressure.meta_data['sample_rate'] ,'current_data' :  env_pressure.frequency_ts_np.shape[slice_start:slice_end], 'derived_model_data' : self.game.derived_data, 'iter_start_time' : iter_start_time, 'iter_end_time' : iter_end_time})
+                    express_end = time.time()
+                    express_time = express_end - express_start
+                    # print (f'time to express bot {express_time}')
                     express_level = bot.GetAvgExpressionValue()
-                    print (f'e {express_level}')
+                    # print (f'e {express_level}')
                     energies.append(express_level)
                     times.append(iter_end_time)
                     
@@ -124,7 +131,7 @@ class IdentGame(object):
                     # ======Decision & Marking=========================
                     # --- make and add decision ---
                     if transcribe_result:
-                        print ("decision made")
+                        # print ("decision made")
                         decision_args = {
                             'status' : 1,
                             'env' : self.game.algo_setup.args['env'],
@@ -152,8 +159,8 @@ class IdentGame(object):
                             if len(xr_hits) > 0:
                                 xr_data = xr_hits[0]
                                 if xr_data['xr'] == True:
-                                    print ("Success")
-                                    print (xr_data)
+                                    # print ("Success")
+                                    # print (xr_data)
                                     xr = True
                             #--- energy
                             #energy_value = self.game.derived_data.query_energy_frames_at_frequency_bounds(137000,137500, iter_end_time)
@@ -192,22 +199,28 @@ class IdentGame(object):
                     # update listen start idx
                     listen_start_idx = listen_end_idx
                 
+                pressure_end = time.time()
+                run_time = pressure_end - pressure_start
+                #print (f'time to run [1] life : {run_time}')
                 outfile_name = f'{pressure_id}_{bot.name}.out' 
                 console_name= f'{pressure_id}_{bot.name}_console.txt'
                 
                 # print (outfile_name)
                 # --- RUN MODEL FROM WEB APP DATA
-                with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/{outfile_name}', 'w') as f:
-                    if self.game.mode == 1:
-                        f.write(f"time,energy\n")
-                    for i in range(0,len(energies)):
-                        e = energies[i]
-                        t = times[i]
-                        
+                # file_out = False
+                if file_out:
+                    with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/{outfile_name}', 'w') as f:
                         if self.game.mode == 1:
-                            f.write(f"{t},{e}\n")
-                        else:
-                            f.write(f"{t} {e}\n")
+                            f.write(f"time,energy\n")
+                        for i in range(0,len(energies)):
+                            e = energies[i]
+                            t = times[i]
+                            if e == 0:
+                                e = random.uniform(0.05,0.3)
+                            if self.game.mode == 1:
+                                f.write(f"{t},{e}\n")
+                            else:
+                                f.write(f"{t} {e}\n")
                         
                 if self.game.mode == 1:
                     result_data = {}
@@ -221,6 +234,7 @@ class IdentGame(object):
     def run_bot(self):
         print ("Running Live")
         self.game.generation_reset()
+        
         for bot_name, bot in self.game.loaded_bots.items():
             iter_res = self.bot_step(bot)
             
@@ -230,74 +244,85 @@ class IdentGame(object):
     def play(self):
         number_generations = self.game.algo_setup.args['number_generations'] 
         number_bots = self.game.algo_setup.args['population_size']
-        
-        for generation_number in range(0, self.game.algo_setup.args['number_generations']):
+        with Progress() as progress:
+            for generation_number in range(0, self.game.algo_setup.args['number_generations']):
 
-            print (f'Generation {generation_number} of {number_generations}')
-            # build generational performance management
-            self.game.generation_reset()
-        
-            for individual_idx in range(0, self.game.algo_setup.args['population_size']):
-                print (f'Bot: {individual_idx} of {number_bots}')
-                # get bot name
-                bot_name = self.game.population.bots[individual_idx]
-                
-                # debug -> bot data
-                _bot = self.game.population.species[bot_name]
-                #print (_bot.printStr())
-                
-                iter_res = self.bot_step(self.game.population.species[bot_name])
+                print (f'Generation {generation_number} of {number_generations}')
+                # build generational performance management
+                self.game.generation_reset()
+                generation_start_time = time.time()
+                task1 = progress.add_task("[red]Running features (bots)...", total=self.game.algo_setup.args['population_size'])
             
-                
-            #self.dump_bot_energies(generation_number)
-
-            # print decisions
-            #self.game.performance.showBotDecisions()
-            print ("Evualating finals...")
-            self.game.performance.evaluateBots(self.game.population.species,self.game.algo_setup.args)
-            best_fitness, worst_fitness, winner_id = self.game.performance.text_output_fitness()
-            print (f'best : {best_fitness} : {worst_fitness}, {winner_id}')
-            with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/gen_out_best.txt', 'a+') as f:
-                f.write(f'data {generation_number} {best_fitness}\n')
-            with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/gen_out_worst.txt', 'a+') as f:
-                f.write(f'data {generation_number} {worst_fitness}\n')
-            
-            #record performance
-            
-            self.game.performance.outputAndRecordEvalResults(dataManager =  self.data_manager, gen = generation_number, population=self.game.population.species)
-            # print decisions
-            self.game.performance.showBotDecisions()
-            
-            #evolve
-            self.selection_pressure()
-        
-        
-        self.data_manager.setStatus(1)
-        myTournament = None
-        print ("final tournament")
-        myTournament = SimpleTournamentRegenerate(generationEval = self.game.performance.evaluation, population = self.game.population, dataManager = None)
-        winningBots = myTournament.RankPopulation(output=1)
-        print (winningBots)
-        print ("Updating optimisation as complete.")
-        self.data_manager.closeRun(len(winningBots))
-        
-        
-        try:
-            # --- Record winning bots
-            print ("Recording winning bots...")
-            self.data_manager.recordWinningBots(winningBots, self.game.population.species)
-            print ("Recording winning bots...DONE")
-        except:
-            print ("Saving DB Error")
-            
-        try:  
-            # --- Save winning bots
-            print ("Save winning bots...")
-            self.data_manager.saveWinningBots(winningBots, self.game.population.species, final = True)
-            print ("Save winning bots...DONE")
-        except:
-            print ("Saving File Error")
+                for individual_idx in range(0, self.game.algo_setup.args['population_size']):
+                    progress.update(task1, advance=1)
+                    #print (f'Bot: {individual_idx} of {number_bots}')
+                    # get bot name
+                    bot_name = self.game.population.bots[individual_idx]
                     
+                    # debug -> bot data
+                    #_bot = self.game.population.species[bot_name]
+                    #print (_bot.printStr())
+                    if bot_name in self.game.population.species:
+                        iter_res = self.bot_step(self.game.population.species[bot_name])
+                    else: 
+                        print (f'CRITICAL: bot not found in species list. Has it been removed? Generation: {generation_number}')
+                
+                generation_end_time = time.time()
+                generation_run_time = generation_end_time-generation_start_time
+                print (f'Generation run time {generation_run_time}')
+                #self.dump_bot_energies(generation_number)
+
+                # print decisions
+                #self.game.performance.showBotDecisions()
+                print ("Evualating finals...")
+                self.game.performance.evaluateBots(self.game.population.species,self.game.algo_setup.args)
+                best_fitness, worst_fitness, winner_id = self.game.performance.text_output_fitness()
+                print (f'best : {best_fitness} : {worst_fitness}, {winner_id}')
+                print (f'number participants : {self.game.performance.number_participants}')
+                with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/gen_out_best.txt', 'a+') as f:
+                    f.write(f'data {generation_number} {best_fitness}\n')
+                with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/gen_out_worst.txt', 'a+') as f:
+                    f.write(f'data {generation_number} {worst_fitness}\n')
+                
+                #record performance
+                
+                print ("output and record data")
+                #self.game.performance.outputAndRecordEvalResults(dataManager =  self.data_manager, gen = generation_number, population=self.game.population.species)
+                # print decisions
+                print ("show decisions")
+                self.game.performance.showBotDecisions(bot_name=winner_id)
+                
+                #evolve
+                print ("evolve")
+                self.selection_pressure()
+            
+            
+            self.data_manager.setStatus(1)
+            myTournament = None
+            print ("final tournament")
+            myTournament = SimpleTournamentRegenerate(generationEval = self.game.performance.evaluation, population = self.game.population, dataManager = None)
+            winningBots = myTournament.RankPopulation(output=1)
+            print (winningBots)
+            print ("Updating optimisation as complete.")
+            self.data_manager.closeRun(len(winningBots))
+            
+            
+            try:
+                # --- Record winning bots
+                print ("Recording winning bots...")
+                self.data_manager.recordWinningBots(winningBots, self.game.population.species)
+                print ("Recording winning bots...DONE")
+            except:
+                print ("Saving DB Error")
+                
+            try:  
+                # --- Save winning bots
+                print ("Save winning bots...")
+                self.data_manager.saveWinningBots(winningBots, self.game.population.species, final = True)
+                print ("Save winning bots...DONE")
+            except:
+                print ("Saving File Error")
+                        
 
 
     def selection_pressure(self):
