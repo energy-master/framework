@@ -1,24 +1,30 @@
-## 
-# ===================================================
-# | Harbour Popoise Detection Genetic Algorithm     |
-# | Bot run 
-# ===================================================
-#
-#
-#
-#  c. Rahul Tandon, 2024, RSA 2024 
-#  GA Game to be presented in all teams July meeting.
-##
+## ---------------------------------------------------------------------------  #
+# ===================================================                           #
+# | Harbour Popoise Detection Genetic Algorithm     |                           #
+# | Bot run                                         |                           #
+# ===================================================                           #
+#                                                                               #
+#                                                                               #
+#                                                                               #
+#  c. Rahul Tandon, 2024, RSA 2024                                              #
+#  GA Game to be presented in all teams July meeting.                           #
+## ---------------------------------------------------------------------------- #
 import sys
 print (sys.argv[0])
 command = False
-
+bulk = False
+print (sys.argv[4])
 if (len(sys.argv) > 1):
+    
     user = sys.argv[1]
     snapshot_id =  sys.argv[2]
     bot_id = sys.argv[3]
     location_str = sys.argv[4]
-    
+    filter_data = "*"
+    if bot_id == "bulk": 
+        filter_data = sys.argv[5]
+        bulk = True
+        
     command = True
     
 
@@ -28,7 +34,7 @@ if (len(sys.argv) > 1):
 from optimisation_manager import *
 # sys, os imports
 import sys,os, pickle
-
+import requests, json
 # marlin data import -- CUSTOM --
 # sys.path.append('../../marlin_data/marlin_data')
 sys.path.append('/home/vixen/rs/dev/marlin_data/marlin_data')
@@ -113,13 +119,13 @@ if command == True:
     sim_ids.append(snapshot_id)
     print (sim_ids)
     
-
-
-
-
-
-
-
+def load_bot(bot_path):
+    print ("loading...")
+    print (bot_path)
+    file_ptr = open(bot_path, 'rb')
+    bot = pickle.load(file_ptr)
+    print(bot)
+    return bot
 
 # --------------------------------------------------------------
 # --- Setup Class ---                                          |
@@ -166,11 +172,44 @@ class SpeciesIdent(object):
         self.algo_setup.args['run_id'] = self.batch_id
         self.loaded_bots = {}
         self.mode = 0
+        self.bulk = 0
     
     def generation_reset(self):
         self.performance = performance.Performance()
     
-       
+    def load_bots(self, filter_data):
+        url = 'https://vixen.hopto.org/rs/api/v1/data/features'
+        post_data = {'market': filter_data}
+
+        x = requests.post(url, json = post_data)
+        data  = x.json()
+        number_loaded = 0
+        for key in data["data"]:
+            
+            bot_id = key['botID']
+            bot_dir = "/home/vixen/rs/dev/marlin_hp/marlin_hp/bots"
+            bot_path = f'{bot_dir}/{bot_id}.vixen'
+            # print (bot_path)
+            error = False
+            
+            try:
+                bot = load_bot(bot_path)
+                print (bot)
+                self.loaded_bots[bot_id] = bot
+            except:
+                error = True
+                print (f'error loading {bot_id}')
+                
+            if  error == False:
+                number_loaded+=1
+                print (f'success loading {bot_id}')
+            
+        
+        self.mode = 1
+        self.bulk = 1
+        print (f'number loaded : {number_loaded}')
+        
+    
     def run(self):
         pass
     
@@ -213,9 +252,13 @@ if (command):
     algo_setup.args['snapshot_id'] = snapshot_id
     
 
-
 rprint ("Creating Application")
 application = SpeciesIdent(algo_setup)
+
+
+if (bulk):
+    application.load_bots(filter_data)
+
 
 rprint ("Creating world")
 application.build_world()
@@ -272,10 +315,7 @@ def download_data():
     #     data_adapter.download_signature_snapshots(load_args={'signature_path':signature_data_path,"limit":10})
 
 
-def load_bot(bot_path):
-    file_ptr = open(bot_path, 'rb')
-    bot = pickle.load(file_ptr)
-    return bot
+
 
 # data load routine    
 def load_data():
@@ -432,10 +472,9 @@ print (application.derived_data)
 #   Bot(s) download for forward testing
 #
 # ------------------------------------------------------------------
-if command:
+if command == True and bulk == False:
     print ("Running Bot")
-    
-    print ("loading bot")
+    print ("Loading bot")
     bot_dir = "/home/vixen/rs/dev/marlin_hp/marlin_hp/bots"
     bot_path = f'{bot_dir}/{bot_id}.vixen'
     print (bot_path)

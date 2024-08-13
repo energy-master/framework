@@ -43,7 +43,7 @@ class IdentGame(object):
         self.energy_tracker = {}
         self.data_manager = data_manager
         self.game_id = game_id
-        
+        self.bulk_energies = {}
         
     def world_step(self):
         pass
@@ -53,15 +53,15 @@ class IdentGame(object):
                     
             # reset data feed for new iteration
             #data_feed.reset()
-            
+            self.bulk_energies[bot.name] = {}
             for env_pressure in self.game.data_feed:
                 pressure_start = time.time()
                 file_out = False
                 #-- build spec
-                if self.game.mode == 1:
+                if self.game.mode == 1 and self.game.bulk == 0:
                     file_out = True
                     print ("building image data")
-                    build_f_profile(env_pressure, self.game_id, bot.name)
+                    #build_f_profile(env_pressure, self.game_id, bot.name)
                     build_spec(env_pressure, self.game_id,  bot.name)
                     build_waveform(env_pressure, self.game_id, bot.name)
                     
@@ -89,7 +89,7 @@ class IdentGame(object):
                 sample_rate = env_pressure.meta_data['sample_rate']
                 energies = []
                 times = []
-                
+                idx_iter = 0
                 while listen_start_idx < (env_pressure_length - listen_delta_idx):
                     
                     # --- get start & end slice idx ---
@@ -118,6 +118,15 @@ class IdentGame(object):
                     energies.append(express_level)
                     times.append(iter_end_time)
                     
+                    if express_level == 0:
+                        express_level = random.uniform(0.05,0.2)
+                    if express_level > 0.8:
+                        express_level = random.uniform(0.8,1.0)
+                        
+                    if self.game.mode == 1 and self.game.bulk == 1:
+                        
+                        self.bulk_energies[bot.name][idx_iter] = express_level
+                        idx_iter += 1
                     
                     # --- transcription ---
                     # print (bot.transcriptionDNA.transcription_threshold)
@@ -143,7 +152,7 @@ class IdentGame(object):
                         }
                         
                         new_decision = IdentDecision(decision_data=decision_args)
-                        self.game.performance.add_decision(decision=new_decision, epoch = "1", botID = bot.name)
+                        self.game.performance.add_decision(decision=new_decision, epoch = env_pressure.meta_data['snapshot_id'], botID = bot.name)
                         
                         
                         # ================================================
@@ -152,29 +161,30 @@ class IdentGame(object):
                         
                         
                         xr = False
-                        if self.game.mode == 0:
-                            
-                            #--- traditional
-                            xr_hits = self.game.derived_data.query_label_time(iter_start_time, iter_end_time)
-                            if len(xr_hits) > 0:
-                                xr_data = xr_hits[0]
-                                if xr_data['xr'] == True:
-                                    # print ("Success")
-                                    # print (xr_data)
-                                    xr = True
-                            #--- energy
-                            #energy_value = self.game.derived_data.query_energy_frames_at_frequency_bounds(137000,137500, iter_end_time)
-                            # avg_energy = abs(energy_value[1])
-                            # print (avg_energy)
-                            # if avg_energy > 0.08:
-                            #     xr = True
-                            #     print (avg_energy)
-                            #     print ("success")
+                        if self.game.bulk == 0:
+                            if self.game.mode == 0 or self.game.mode == 1 :
                                 
-                            else:
-                                xr = False
-                            
-                            # print (xr)
+                                #--- traditional
+                                xr_hits = self.game.derived_data.query_label_time(iter_start_time, iter_end_time)
+                                if len(xr_hits) > 0:
+                                    xr_data = xr_hits[0]
+                                    if xr_data['xr'] == True:
+                                        # print ("Success")
+                                        # print (xr_data)
+                                        xr = True
+                                #--- energy
+                                #energy_value = self.game.derived_data.query_energy_frames_at_frequency_bounds(137000,137500, iter_end_time)
+                                # avg_energy = abs(energy_value[1])
+                                # print (avg_energy)
+                                # if avg_energy > 0.08:
+                                #     xr = True
+                                #     print (avg_energy)
+                                #     print ("success")
+                                    
+                                else:
+                                    xr = False
+                                
+                                # print (xr)
                             
                         
                     
@@ -192,7 +202,7 @@ class IdentGame(object):
                         }
                         
                         close_decision = IdentDecision(decision_data=decision_args)                    
-                        self.game.performance.add_decision(decision=close_decision, epoch = "1", botID = bot.name)
+                        self.game.performance.add_decision(decision=close_decision, epoch = env_pressure.meta_data['snapshot_id'], botID = bot.name)
                         
                     # =================================================
                     
@@ -204,11 +214,18 @@ class IdentGame(object):
                 #print (f'time to run [1] life : {run_time}')
                 outfile_name = f'{pressure_id}_{bot.name}.out' 
                 console_name= f'{pressure_id}_{bot.name}_console.txt'
+                decision_name = f'{pressure_id}_{bot.name}_decision.csv'
                 
                 # print (outfile_name)
                 # --- RUN MODEL FROM WEB APP DATA
                 # file_out = False
                 if file_out:
+                    
+                    decision_text = self.game.performance.showBotDecisions(bot_name=bot.name)
+                    
+                    with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/{decision_name}', 'w') as f:
+                        f.write(decision_text)
+                        
                     with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/{outfile_name}', 'w') as f:
                         if self.game.mode == 1:
                             f.write(f"time,energy\n")
@@ -216,7 +233,9 @@ class IdentGame(object):
                             e = energies[i]
                             t = times[i]
                             if e == 0:
-                                e = random.uniform(0.05,0.3)
+                                e = random.uniform(0.05,0.2)
+                            if e > 0.8:
+                                e = random.uniform(0.8,1.0)
                             if self.game.mode == 1:
                                 f.write(f"{t},{e}\n")
                             else:
@@ -236,10 +255,15 @@ class IdentGame(object):
         self.game.generation_reset()
         
         for bot_name, bot in self.game.loaded_bots.items():
+            print (f'running : {bot.name}')
             iter_res = self.bot_step(bot)
+         
+        #dump bulk energies if exist
+        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies.json', 'a+') as f:
+            json.dump(self.bulk_energies,f)   
             
         self.data_manager.closeRun(0)
-            
+        
             
     def play(self):
         number_generations = self.game.algo_setup.args['number_generations'] 
@@ -273,24 +297,35 @@ class IdentGame(object):
                 #self.dump_bot_energies(generation_number)
 
                 # print decisions
-                #self.game.performance.showBotDecisions()
+                
                 print ("Evualating finals...")
                 self.game.performance.evaluateBots(self.game.population.species,self.game.algo_setup.args)
                 best_fitness, worst_fitness, winner_id = self.game.performance.text_output_fitness()
                 print (f'best : {best_fitness} : {worst_fitness}, {winner_id}')
                 print (f'number participants : {self.game.performance.number_participants}')
+                print ("show decisions")
+                fitness_vector = []
+                fitness_vector = self.game.performance.output_fitness_vector()
+                #print(fitness_vector)
+                
+                if best_fitness > 0.0:
+                    self.game.performance.showBotDecisions(bot_name=winner_id)
                 with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/gen_out_best.txt', 'a+') as f:
                     f.write(f'data {generation_number} {best_fitness}\n')
                 with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/gen_out_worst.txt', 'a+') as f:
                     f.write(f'data {generation_number} {worst_fitness}\n')
                 
-                #record performance
+                # output all fitness
+                with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/all_fitness.txt', 'a+') as f:
+                    for fitness in fitness_vector:
+                        f.write(f"{fitness}\n")
+                    f.write("-\n")
                 
+                #record performance
                 print ("output and record data")
                 #self.game.performance.outputAndRecordEvalResults(dataManager =  self.data_manager, gen = generation_number, population=self.game.population.species)
                 # print decisions
-                print ("show decisions")
-                self.game.performance.showBotDecisions(bot_name=winner_id)
+                
                 
                 #evolve
                 print ("evolve")
@@ -390,11 +425,6 @@ class IdentGame(object):
 
         myTournament = None
 
-
-
-        
-
-  
     # I/O
     
     def dump_bot_energies(self, generation : int = 0):

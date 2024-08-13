@@ -49,6 +49,8 @@ def build_spec(data,  id, bot_id):
     print ("build")
     plt.specgram(y,NFFT=n_fft, Fs=sample_rate, scale="dB",mode="magnitude",cmap="ocean")
     print ("done")
+    #plt.colorbar()
+    # plt.figure(figsize=(12, 5))
     plt.ylabel('Frequency [Hz]')
     plt.xlabel('Time [sec]')
     # f, t, Sxx = signal.spectrogram(y, fs=sample_rate, nfft=n_fft)
@@ -102,6 +104,7 @@ def build_waveform(data, id, bot_id):
     
     fig, ax = plt.subplots(figsize=(10, 5))
     img = librosa.display.waveshow(v, sr=sampling_rate)
+    # plt.colorbar()
     fig.savefig(f'{filepath}')
     plt.close(fig)
   
@@ -139,6 +142,7 @@ def build_f_profile(data, id, bot_id):
         ft_p.append(ft[i])
     
     plt.plot(freqs, ft_p);
+    
     plt.title(f'Power Spectrum {freq_lower}:{freq_end}');
     # plt.xlim(20,1000)
     plt.xlabel('Frequency (Hz)');

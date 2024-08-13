@@ -177,7 +177,6 @@ class SpeciesIdent(object):
         self.performance.showBotDecisions()
         print ("reseting generation data...done")
         
-    
        
     def run(self):
         pass
@@ -185,8 +184,6 @@ class SpeciesIdent(object):
     def build_world(self):
         """Build the population of bots using brahma_marlin. Genes are present in ../genes
         """
-        
-        
         
         try:
             logging.critical('Building population')

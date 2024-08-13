@@ -22,7 +22,7 @@ class IdentDecision(RootDecision):
         self.xr = decision_data['xr']
         
     def __str__(self):
-        return ("Dv1.0 : Market: {0} ; Decision Type: {1} ;  Time  {2}; Action {3} : Result {4}".format(self.Market, self.Decision, self.time_bounds[0], self.Decision, self.xr ))
+        return ("HP Ident 1.0, Market, {0} , Decision Type, {1} ,  Time , {2}, Action, {3} , Result {4}".format(self.Market, self.Decision, self.time_bounds[0], self.Decision, self.xr ))
   
   
   
