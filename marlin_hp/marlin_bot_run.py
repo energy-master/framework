@@ -361,6 +361,7 @@ def build_feed():
 if command == True or len(sim_ids)>0:
     rprint ("Downloading data.")
     download_data()
+    #maybe add load here to save time...if data file already downlaoded
 else:
     rprint ("Loading data.")
     load_data()
@@ -392,7 +393,7 @@ data_avail = False
 #
 #---------------------------------------------------------
 
-data_adapter.build_derived_data(n_fft=2048)
+data_adapter.build_derived_data(n_fft=8192)
 print ("Derived data for simulation...building")
 
 
@@ -404,9 +405,8 @@ for snapshot in data_feed_:
         
         print (f'Building derived data feed structure {s_id}')
         logging.critical(f'Building derived data feed structure {s_id}')
-        snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot, sample_delta_t=1.0, f_min = 0, f_max = 2000)
-        data_adapter.derived_data.build_band_energy_profile(sample_delta_t=100, simulation_data=snapshot,discrete_size = 50)
-        
+        snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot, sample_delta_t=1.0, f_min = 130000, f_max = 150000)
+        data_adapter.derived_data.build_band_energy_profile(sample_delta_t=0.5, simulation_data=snapshot,discrete_size = 100)
     else:
         data_avail = True
         print ("derived data already available.")
@@ -414,30 +414,14 @@ for snapshot in data_feed_:
     #     pickle.dump(snapshot_derived_data, f) # serialize the list
     
 
-# print ("Derived data for signatures...building")
-# for snapshot in data_feed_label:
-#     s_id = snapshot.meta_data['snapshot_id']
-#     print (f'Building derived data feed structure {s_id}')
+if not data_avail:
+    with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{s_id}.da', 'wb') as f:  # open a text file
+        pickle.dump(data_adapter.derived_data, f) # serialize the list
 
-#     snapshot_derived_data = data_adapter.derived_data.build_derived_labelled_data(signature_data=snapshot)
-#     # with open(f'{s_id}_.der', 'wb') as f:  # open a text file
-#     #     pickle.dump(snapshot_derived_data, f) # serialize the list
-
-
-
-# with open(f'{s_id}_.df', 'wb') as f:  # open a text file
-#     pickle.dump(data_feed_, f) # serialize the list
-
-# if not data_avail:
-#     with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{s_id}.da', 'wb') as f:  # open a text file
-#         pickle.dump(data_adapter.derived_data, f) # serialize the list
-
-# set simulation data feed
-
-# data_feed_ = None
 
 print (f'data : {data_avail}')
 tmp_derived_data = None
+
 if data_avail:
     
     print ("Loading data as saved data available")

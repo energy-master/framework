@@ -8,7 +8,7 @@ import os, sys
 import time
 from rich.progress import Progress
 from utils import *
-
+import traceback
 # brahma
 # IMPORT BRAHMA 
 # import evolutionary procedures
@@ -35,6 +35,17 @@ with open("/home/vixen/rs/dev/marlin_hp/marlin_hp/gene_limits.json", 'r') as con
 print (gene_limits)
 
 
+class TracePrints(object):
+  def __init__(self):    
+    self.stdout = sys.stdout
+  def write(self, s):
+    self.stdout.write("Writing %r\n" % s)
+    traceback.print_stack(file=self.stdout)
+  def flush(self): pass
+
+
+# sys.stdout = TracePrints()
+
 class IdentGame(object):
  
     def __init__(self, application = None, data_manager = None, game_id = ""):
@@ -44,6 +55,7 @@ class IdentGame(object):
         self.data_manager = data_manager
         self.game_id = game_id
         self.bulk_energies = {}
+        self.bulk_times = {}
         
     def world_step(self):
         pass
@@ -54,7 +66,9 @@ class IdentGame(object):
             # reset data feed for new iteration
             #data_feed.reset()
             self.bulk_energies[bot.name] = {}
+            
             for env_pressure in self.game.data_feed:
+               
                 pressure_start = time.time()
                 file_out = False
                 #-- build spec
@@ -62,8 +76,8 @@ class IdentGame(object):
                     file_out = True
                     print ("building image data")
                     #build_f_profile(env_pressure, self.game_id, bot.name)
-                    build_spec(env_pressure, self.game_id,  bot.name)
-                    build_waveform(env_pressure, self.game_id, bot.name)
+                    # build_spec(env_pressure, self.game_id,  bot.name)
+                    # build_waveform(env_pressure, self.game_id, bot.name)
                     
                 
                 # print (env_pressure)
@@ -81,6 +95,7 @@ class IdentGame(object):
                 # print (xr_hits)
                 
                 pressure_id = env_pressure.meta_data['snapshot_id']
+                
                 listen_start_idx = 0
                 listen_end_idx = 0
                 # print (env_pressure.meta_data['snapshot_id'])
@@ -89,6 +104,7 @@ class IdentGame(object):
                 sample_rate = env_pressure.meta_data['sample_rate']
                 energies = []
                 times = []
+                hits = [] # list of label hits for game mode 1
                 idx_iter = 0
                 while listen_start_idx < (env_pressure_length - listen_delta_idx):
                     
@@ -104,20 +120,31 @@ class IdentGame(object):
                     iter_end_time   =  env_pressure.start_time  + timedelta(milliseconds=_s)
                     #print (f'time vector bounds : {iter_start_time} : {iter_end_time}')
                     
-                    # print (f'DMM input vector size: {listen_delta_idx}')
                     # --- express bot ---
                     # [nb. data structure is passed to individual genes if dna is initialised.
                     # extra data can be added under 'init_data' field]
                     express_start = time.time()
-                    express_value = bot.ExpressDNA(data = {'data_index':listen_start_idx, 'sample_rate' : env_pressure.meta_data['sample_rate'] ,'current_data' :  env_pressure.frequency_ts_np.shape[slice_start:slice_end], 'derived_model_data' : self.game.derived_data, 'iter_start_time' : iter_start_time, 'iter_end_time' : iter_end_time})
+                    
+                    if self.game.mode == 1:
+                        express_value = bot.ExpressDNA(data = {'data_index':listen_start_idx, 'sample_rate' : env_pressure.meta_data['sample_rate'] ,'current_data' :  env_pressure.frequency_ts_np.shape[slice_start:slice_end], 'derived_model_data' : self.game.derived_data, 'iter_start_time' : iter_start_time, 'iter_end_time' : iter_end_time})
+                   
+                    if self.game.mode == 0:
+                        # sys.stdout = TracePrints()
+                        express_value = bot.ExpressDNA(data = {'data_index':listen_start_idx, 'sample_rate' : env_pressure.meta_data['sample_rate'] ,'current_data' :  env_pressure.frequency_ts_np.shape[slice_start:slice_end], 'derived_model_data' : self.game.multiple_derived_data[pressure_id], 'iter_start_time' : iter_start_time, 'iter_end_time' : iter_end_time})
+                        
                     express_end = time.time()
+                    
+                    
                     express_time = express_end - express_start
                     # print (f'time to express bot {express_time}')
                     express_level = bot.GetAvgExpressionValue()
                     # print (f'e {express_level}')
                     energies.append(express_level)
-                    times.append(iter_end_time)
-                    
+                    # times.append(iter_end_time)
+                    t_start_s = (slice_start / env_pressure.meta_data['sample_rate']) #
+                    t_end_s = (slice_end / env_pressure.meta_data['sample_rate']) #
+                    t_m = (t_start_s + t_end_s)/2                        
+                    times.append(t_m)
                     if express_level == 0:
                         express_level = random.uniform(0.05,0.2)
                     if express_level > 0.8:
@@ -126,6 +153,7 @@ class IdentGame(object):
                     if self.game.mode == 1 and self.game.bulk == 1:
                         
                         self.bulk_energies[bot.name][idx_iter] = express_level
+                        self.bulk_times[idx_iter] = iter_start_time.strftime("%H:%M:%S.%f")
                         idx_iter += 1
                     
                     # --- transcription ---
@@ -135,6 +163,18 @@ class IdentGame(object):
                     }
                     
                     transcribe_result = bot.transcriptionDNA.transcribe(transcription_data)
+                    
+                    
+                    # Build labeled dataset here in order to view in spectrogrma image
+                    #-----
+                    if self.game.mode == 1:
+                        xr_hits = self.game.derived_data.query_label_time(iter_start_time, iter_end_time)
+                        if len(xr_hits) > 0:
+                            hits.append(1)
+                        else:
+                            hits.append(0)
+                
+                
                     
                     # transcribe_result = True # force transcription
                     # ======Decision & Marking=========================
@@ -161,7 +201,11 @@ class IdentGame(object):
                         
                         
                         xr = False
-                        if self.game.bulk == 0:
+                        bulk = 0
+                        if hasattr(self.game, 'bulk'):
+                            bulk = self.game.bulk
+                        
+                        if bulk == 0:
                             if self.game.mode == 0 or self.game.mode == 1 :
                                 
                                 #--- traditional
@@ -209,6 +253,8 @@ class IdentGame(object):
                     # update listen start idx
                     listen_start_idx = listen_end_idx
                 
+                
+                
                 pressure_end = time.time()
                 run_time = pressure_end - pressure_start
                 #print (f'time to run [1] life : {run_time}')
@@ -234,13 +280,18 @@ class IdentGame(object):
                             t = times[i]
                             if e == 0:
                                 e = random.uniform(0.05,0.2)
+                                energies[i] = e
                             if e > 0.8:
                                 e = random.uniform(0.8,1.0)
+                                energies[i] = e
                             if self.game.mode == 1:
                                 f.write(f"{t},{e}\n")
                             else:
                                 f.write(f"{t} {e}\n")
-                        
+                
+                    build_spec(env_pressure, self.game_id,  bot.name, times=times, energies=energies, hits = hits)
+                    
+                    
                 if self.game.mode == 1:
                     result_data = {}
                     result_data['energies'] = f'https://vixen.hopto.org/rs/ident_app/ident/brahma/out/{outfile_name}'
@@ -259,8 +310,12 @@ class IdentGame(object):
             iter_res = self.bot_step(bot)
          
         #dump bulk energies if exist
-        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies.json', 'a+') as f:
-            json.dump(self.bulk_energies,f)   
+        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies.json', 'w+') as f:
+            json.dump(self.bulk_energies,f)  
+         
+        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_times.json', 'w+') as f:
+            json.dump(self.bulk_times,f)  
+         
             
         self.data_manager.closeRun(0)
         

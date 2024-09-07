@@ -99,14 +99,10 @@ signature_data_path = "/home/vixen/rs/dev/marlin_hp/marlin_hp/data/sig"
 from game import *
 
 #snapshot ids
-sim_ids = ["515890908851898947403331","431429798878348481296633","18384048342489753394866","612410776163767706197959","152113855399211401961333","249872969138326627090783","68793058397733916400301"]
-sim_ids = ["82000738700746005197334"]
-sim_ids = ["595319575884544847440835"]
-sim_ids = ["92088117475821875250293"]
-
-sim_ids = ["595319575884544847440835"]
+sim_ids = ["983040429874824099068136","496330765318343040702688","4510916050868080480725","791766822611366068898805","255909560907909230385506","147806043092917235813293","78166070127568866942302","842973085190946012464209","829104114451608323962914","98609866005174372621222","657840894015545578254694","186889183607954245154458","122544861653979922814199","746620378036255544838568","952470554636204171461253","84112867121113110266116","363225061427360721137730","892132173275665509527852","318396967157545581971621","356373695111556704055606","904312141590731430836451","48339782993708725612372","64750676209439611520678","82000738700746005197334","702347117716629389321406","250396319402307579582508","493774115372907090242973","194390376877680115920253","14268458523554600846434","434956021136141906386898","69649683436184019747768","44628814182950235636971","790960398526743855223705","13326721885126671142836","265674761255571576108244","597681256986802138994218","236106104873301048552682","916713239567735225362134","804031065014437941740813","291568429359273703023","36173624202566695107248","8479382645647189754988","16232091178931004631151","458216449030310996755802","644591713862472180785605","947001382799689346997018","392291757657498669254360","999641986773914295779102","398566267541751172139272","612544273941231236030105","708869496373649469644956","991813660211675758125747","839194952404431997544299","534392719420462600801900","798953357404557943447630","15352589773654034702565","114020915287240939545830","42437311049457749180813","958264056823172008798164","999876447769858733241497","222916752571191933551256","830598602900519976859006","99779383802341290531997","971461050187740241769345","59043452008554415790203"]
+sim_ids = ["983040429874824099068136","496330765318343040702688","4510916050868080480725"]
 limit = len(sim_ids)
-limit =5
+
 if command == True:
     sim_ids = []
     sim_ids.append(snapshot_id)
@@ -169,6 +165,7 @@ class SpeciesIdent(object):
         self.algo_setup.args['run_id'] = self.batch_id
         self.loaded_bots = {}
         self.mode = 0
+        self.multiple_derived_data = None
     
     def generation_reset(self):
         print ("reseting generation data")
@@ -260,6 +257,7 @@ if command:
 
 # Init data adapter (marlin adapter)
 data_adapter = None
+print (f'Limit {limit} Location {location}')
 data_adapter = MarlinData(load_args={'limit' : limit})
 
 
@@ -302,7 +300,7 @@ def load_data():
     global data_adapter
     logging.critical('Loading data')
     #r = data_adapter.load_from_path(load_args={'load_path' : signature_data_path, "snapshot_type":"signature", "limit" : limit})
-    r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", "limit" : limit})
+    r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", 'ss_ids' : sim_ids,"limit" : limit})
     
 data_feed_ = None
 data_feed_label = None
@@ -335,10 +333,14 @@ if command == True or len(sim_ids)>0:
     rprint ("Downloading data.")
     # download_data()
     load_data()
+    #download_data()
 else:
     rprint ("Loading data.")
     load_data()
     rprint ("Loading data...Done")
+
+
+
 
 # if command == False:
 #     data_adapter.build_game()
@@ -358,44 +360,74 @@ rprint ("Building Data Feed...Done")
 
 
 
-
 #---------------------------------------------------------
 #
 # Using Derived Data Structures
 #
 #---------------------------------------------------------
 
-data_adapter.build_derived_data(n_fft=application.algo_setup.args['n_fft'])
+# data_adapter.build_derived_data(n_fft=application.algo_setup.args['n_fft'])
 print ("Derived data for simulation...building")
+if data_avail:
+    print ("We have data available!")
 for snapshot in data_feed_:
     
     s_id = snapshot.meta_data['snapshot_id']
     print (f'Building derived data feed structure {s_id}')
     if not data_avail:
+        data_adapter.derived_data = None
+        data_adapter.build_derived_data(n_fft=application.algo_setup.args['n_fft'])
         logging.critical(f'Building derived data feed structure {s_id}')
-        snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot, sample_delta_t=1.0, f_min = 130000, f_max = 150000)
+        snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot, sample_delta_t=1.0, f_min = 130000, f_max = 145000)
         data_adapter.derived_data.build_band_energy_profile(sample_delta_t=0.5, simulation_data=snapshot,discrete_size = 100)
+        print ("saving ...")
+        with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{s_id}.da', 'wb') as f:  # open a text file
+            pickle.dump(data_adapter.derived_data, f) # serialize the list
+
     else:
         logging.critical(f'Will load derived data for {s_id}')
         
+
+# if data_adapter.derived_data == None:
+#     data_adapter.build_derived_data(n_fft=application.algo_setup.args['n_fft'])
+        
  
 
-if not data_avail:
-    with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{s_id}.da', 'wb') as f:  # open a text file
-        pickle.dump(data_adapter.derived_data, f) # serialize the list
+# if not data_avail:
+#     with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{s_id}.da', 'wb') as f:  # open a text file
+#         pickle.dump(data_adapter.derived_data, f) # serialize the list
 
 
+
+
+# Load saved derived data objects
 
 
 tmp_derived_data = None
 if data_avail:
-    with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{s_id}.da', 'rb') as f:  # open a text file
-        data_adapter.derived_data = None
-        tmp_derived_data = pickle.load(f) 
-        data_adapter.derived_data = tmp_derived_data
+    
+    for active_ssid in sim_ids:
+    
+        with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{s_id}.da', 'rb') as f:  # open a text file
+            data_adapter.derived_data = None
+            tmp_derived_data = pickle.load(f) 
+            #tmp_derived_data.get_max_f_index()
+            data_adapter.derived_data = tmp_derived_data
+            
+            data_adapter.multiple_derived_data[active_ssid] = tmp_derived_data
+
+
+
+
+print (data_adapter.multiple_derived_data)
+
+
+
+# we now have all the active ids
+
 
 # set simulation data feed
-print (f'max e: {data_adapter.derived_data.max_energy}')
+print (f'max e:     {data_adapter.derived_data.max_energy}')
 print (f'min e : {data_adapter.derived_data.min_energy}')
 print (f'max avg e : {data_adapter.derived_data.max_avg_energy}')
 
@@ -407,6 +439,7 @@ data_adapter.derived_data.build_xr_data()
 print ("xr built")
 
 application.derived_data = data_adapter.derived_data
+application.multiple_derived_data = data_adapter.multiple_derived_data
 application.data_feed = data_feed_
 
 print ("-----")

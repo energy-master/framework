@@ -3,6 +3,8 @@ import librosa.display
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import numpy as np
+from scipy.interpolate import make_interp_spline
 
 from scipy import signal
 from scipy.fft import fftshift
@@ -35,64 +37,102 @@ def get_bin_f(librosa_f_bins, freq_lower, freq_end):
     return index_start, index_end
     
 
-def build_spec(data,  id, bot_id):
+def build_spec(data,  id, bot_id, n_fft = None, f_min = 0, f_max = 0, custom=0, sr=96000, identifier=0, times=[], energies=[], hits = []):
     print ("building spec")
-    y = data.frequency_ts_np * 40
-    n_fft = 8192
-    sample_rate = data.meta_data['sample_rate']
-    # f, t, Sxx = signal.spectrogram(y, fs=sample_rate, window=('hamming'), nperseg=1000, noverlap=500, nfft=n_fft, detrend = 'constant', return_onesided=True, scaling='density', axis=-1, mode='psd')
-    # dB = librosa.amplitude_to_db((Sxx)) #get magnitude of signal and convert to dB
-    # plt.pcolormesh(t, f, dB, shading='gouraud')
     
-    # plt.colorbar()
-   
-    print ("build")
-    plt.specgram(y,NFFT=n_fft, Fs=sample_rate, scale="dB",mode="magnitude",cmap="ocean")
-    print ("done")
-    #plt.colorbar()
-    # plt.figure(figsize=(12, 5))
-    plt.ylabel('Frequency [Hz]')
-    plt.xlabel('Time [sec]')
-    # f, t, Sxx = signal.spectrogram(y, fs=sample_rate, nfft=n_fft)
-    # librosa.display.specshow(Sxx, sr=sample_rate, y_axis='linear', x_axis='time')
-    # # print ("spec built")
-    # # plt.pcolormesh(t, f, Sxx, shading='gouraud')
-    # print ("color mesh built")
-    # plt.ylabel('Frequency [Hz]')
+    if custom == 0:
+    
+    
+    
+        
+        e_profile = np.array(energies)
+        t_profile = np.array(times)
+    
+        y = data.frequency_ts_np * 40
+        if n_fft == None:
+            n_fft = 8192
+        else:
+            n_fft = int(n_fft)
+        
+        sample_rate = data.meta_data['sample_rate']
+        
+        print ("build")
+        plt.specgram(y,NFFT=n_fft, Fs=sample_rate, scale="dB",mode="magnitude",cmap="ocean")
+                
+        # X_Y_Spline = make_interp_spline(f_profile, e_profile)
+        # # Returns evenly spaced numbers
+        # # over a specified interval.
+        # X_ = np.linspace(f_profile.min(), f_profile.max(), 500)
+        # Y_ = X_Y_Spline(X_)
 
-   
-    snapshot_id =  data.meta_data['snapshot_id']
-    filepath = f'/home/vixen/html/rs/ident_app/ident/brahma/out/{snapshot_id}_{bot_id}_main_spec.png'
-    plt.savefig(filepath)
+        # plt.plot( t_profile,e_profile , '-')
+        # plt.plot( X_,Y_ , '-',color='green' )
+        
+        for idx, e in enumerate(energies):
+            if e > 0.7:
+                
+                plt.plot(times[idx], 100000, 'go')
+        
+        for idx, e in enumerate(hits):
+            if e == 1:
+                plt.plot(times[idx], 150000, 'bv')
+                
+        plt.colorbar()
+        print ("done")
     
-    # plt.show()
-    # D = librosa.stft(y, n_fft=n_fft,hop_length = n_fft // 2)  # STFT of y
-    # S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max,amin=20)
-    # # S_db = np.abs(D)
-    # sample_rate = data.meta_data['sample_rate']
-    # print (S_db[len(S_db)-1])
-    # snapshot_id =  data.meta_data['snapshot_id']
-    # filepath = f'/home/vixen/html/rs/ident_app/ident/brahma/out/{snapshot_id}_{bot_id}_main_spec.png'
-   
-   
-    
-    # plt.figure(figsize=(12, 5))
-    # librosa.display.specshow(S_db, sr=sample_rate, y_axis='linear', x_axis='time')
-    # # tick_frames = librosa.time_to_frames(np.arange(1, 6))
-    # # plt.xlim([0, tick_frames[-1]])
+        plt.ylabel('Frequency (H)')
+        plt.xlabel('Time (s)')
+        
+        if f_max != 0:
+            plt.ylim([int(f_min), int(f_max)])
 
-    # freqs = librosa.fft_frequencies()
-    # print (freqs)
-    # max_bin = np.flatnonzero(freqs >= 2000)[0]
-    # min_bin = np.flatnonzero(freqs <= 100000)[0]
+        if bot_id != "debug":
+            snapshot_id =  data.meta_data['snapshot_id']
+            filepath = f'/home/vixen/html/rs/ident_app/ident/brahma/out/{snapshot_id}_{bot_id}_main_spec.png'
+        
+        else:
+            snapshot_id =  data.meta_data['snapshot_id']
+            filepath = f'/home/vixen/html/rs/ident_app/ident/brahma/out/spec/{id}.png'
+        
+        
+        
+        
+        plt.savefig(filepath)
     
-    # plt.ylim([0, 145000])
     
-    # # librosa.display.time_ticks(tick_frames, librosa.frames_to_time(tick_frames))
-    # plt.xlabel('Time')
-    # plt.ylabel('Hz')
-    # plt.savefig(filepath)
     
+    
+    if custom == 1:
+    
+        y = data * 40
+        if n_fft == None:
+            n_fft = 8192
+        else:
+            n_fft = int(n_fft)
+        
+        sample_rate = sr
+        print ("build")
+        plt.specgram(y,NFFT=n_fft, Fs=sample_rate, scale="dB",mode="magnitude",cmap="ocean")
+        plt.colorbar()
+        print ("done")
+    
+        plt.ylabel('Frequency (H)')
+        plt.xlabel('Time (s)')
+        
+        if f_max != 0:
+            plt.ylim([int(f_min), int(f_max)])
+
+        if bot_id != "debug":
+            snapshot_id =  data.meta_data['snapshot_id']
+            filepath = f'/home/vixen/html/rs/ident_app/ident/brahma/out/{snapshot_id}_{bot_id}_main_spec.png'
+        
+        else:
+            
+            filepath = f'/home/vixen/html/rs/ident_app/ident/brahma/out/spec/{identifier}.png'
+        
+        plt.savefig(filepath)
+    
+  
     
     
 
