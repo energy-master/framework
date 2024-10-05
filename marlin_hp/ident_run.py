@@ -5,7 +5,7 @@
 #
 #
 #
-#  c. Rahul Tandon, 2024, RSA 2024 
+#  c. Rahul Tandon, 2024, RSA 2024 - cool!
 #  GA Game to be presented in all teams July meeting.
 ##
 import sys
