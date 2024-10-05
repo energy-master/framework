@@ -1,0 +1,30 @@
+
+
+
+Building data adapters
+
+
+1. Add the exit routine to prevent op running
+2. Add snapshot ids - user merge routine 
+3. Set location to correct value 
+
+4. ddownload data first into local folder 
+5. change to load data and build derived data objects 
+
+note:   need to see what is available and load and downlaod the rest to speed up development
+        at the moment all available or not
+        is the optimisation routine only built for one ss?
+        Need to scale up to multiple ss 
+
+
+        marlin_bot_run -> one ss will suffice
+        ident_run -> optimisation engine so need more ss scalability
+
+
+
+Running:
+
+1. set sim ids for running against
+
+
+2. 
