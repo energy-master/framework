@@ -37,7 +37,7 @@ def get_bin_f(librosa_f_bins, freq_lower, freq_end):
     return index_start, index_end
     
 
-def build_spec(data,  id, bot_id, n_fft = None, f_min = 0, f_max = 0, custom=0, sr=96000, identifier=0, times=[], energies=[], hits = []):
+def build_spec(data,  id, bot_id, n_fft = None, f_min = 0, f_max = 0, custom=0, sr=96000, identifier=0, times=[], energies=[], hits = [], activation_level=0.2):
     print ("building spec")
     
     if custom == 0:
@@ -55,7 +55,7 @@ def build_spec(data,  id, bot_id, n_fft = None, f_min = 0, f_max = 0, custom=0, 
             n_fft = int(n_fft)
         
         sample_rate = data.meta_data['sample_rate']
-        
+        print (activation_level)
         print ("build")
         plt.specgram(y,NFFT=n_fft, Fs=sample_rate, scale="dB",mode="magnitude",cmap="ocean")
                 
@@ -69,7 +69,7 @@ def build_spec(data,  id, bot_id, n_fft = None, f_min = 0, f_max = 0, custom=0, 
         # plt.plot( X_,Y_ , '-',color='green' )
         
         for idx, e in enumerate(energies):
-            if e > 0.7:
+            if e > float(activation_level):
                 
                 plt.plot(times[idx], 100000, 'go')
         

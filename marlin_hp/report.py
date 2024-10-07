@@ -138,13 +138,20 @@ for active_ssid in sim_ids:
 
 entropy_profile = f'entropy_profile_{study_id}.csv'
 entropy_f_profile = f'entropy_freq_profile_{study_id}.csv'
+frequency_profile = f'frequency_profile_{study_id}.csv'
 with open(f'{report_out_path}/{entropy_profile}', 'w') as f:
     f.write('time,entropy\n')
     
 with open(f'{report_out_path}/{entropy_f_profile}', 'w') as f:
     f.write('time,entropy\n')
     
+with open(f'{report_out_path}/{frequency_profile}', 'w') as f:
+    f.write('time,frequency\n')
+    
 delta_t = 0.25
+
+study_frequency_profile = {}
+
 
 for env_pressure in data_feed:
     
@@ -180,34 +187,28 @@ for env_pressure in data_feed:
             f.write(f'{iter_start_time},{e_n} \n')
         
         e_f_n = grab_entropy_at_f_t(2,derived_data,iter_start_time, min_f, max_f)
+        #e_f_n = 0.0
         # print(e_n)
         with open(f'{report_out_path}/{entropy_f_profile}', 'a+') as f:
             f.write(f'{iter_start_time},{e_f_n} \n')
         
         
+        # -- study frequency profile
+        build_f_profile(iter_start_time, derived_data, study_frequency_profile)
+        
         # update listen start idx
         listen_start_idx = listen_end_idx
         
+frequency_hist = calculate_study_frequency_profile(study_frequency_profile)
+print (frequency_hist)
+
+
+with open(f'{report_out_path}/{frequency_profile}', 'a+') as f:
+    for idx, value in frequency_hist.items():
+        f.write(f'{idx},{value}\n')
 
 
 
 
 
 
-
-
-
-# =================================== *********************** ====================================================
-
-
-
-# =================================== ANALYSIS SCRIPTS ===========================================================
-
-# def grab_entropy_across_f_bins(iter_idx, derived_data, s_r):
-#     print (derived_data.delta_t)
-#     time_lookup_idx = math.floor((iter_idx/s_r)/derived_data.delta_t)
-#     print (time_lookup_idx)
-
-
-
-# =================================== *********************** ====================================================

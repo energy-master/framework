@@ -15,7 +15,8 @@ command = False
 bulk = False
 print (sys.argv[4])
 if (len(sys.argv) > 1):
-    
+    command = True
+    my_activation_level = 0.7
     user = sys.argv[1]
     snapshot_id =  sys.argv[2]
     bot_id = sys.argv[3]
@@ -25,7 +26,8 @@ if (len(sys.argv) > 1):
         filter_data = sys.argv[5]
         bulk = True
         
-    command = True
+    else:
+        my_activation_level = sys.argv[5]
     
 
 # --------------------------------------------------------------
@@ -173,6 +175,7 @@ class SpeciesIdent(object):
         self.loaded_bots = {}
         self.mode = 0
         self.bulk = 0
+        self.ss_ids = []
     
     def generation_reset(self):
         self.performance = performance.Performance()
@@ -254,7 +257,7 @@ if (command):
 
 rprint ("Creating Application")
 application = SpeciesIdent(algo_setup)
-
+application.ss_ids = sim_ids
 
 if (bulk):
     application.load_bots(filter_data)
@@ -327,8 +330,8 @@ def load_data():
    
     global data_adapter
     logging.critical('Loading data')
-    r = data_adapter.load_from_path(load_args={'load_path' : signature_data_path, "snapshot_type":"signature", "limit" : limit})
-    r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", "limit" : limit})
+    #r = data_adapter.load_from_path(load_args={'load_path' : signature_data_path, "snapshot_type":"signature", "limit" : limit})
+    r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", "limit" : limit,  'ss_ids' : sim_ids})
     
 data_feed_ = None
 data_feed_label = None
@@ -356,11 +359,21 @@ def build_feed():
 #
 #   ---------------------------------------
 
-# download_data()
 
+
+# do we have the waveform data?
+ss_id = sim_ids[0]
+sim_load = False
+if os.path.isfile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{ss_id}.da'):
+    sim_load = True
+
+# download_data()
 if command == True or len(sim_ids)>0:
     rprint ("Downloading data.")
-    download_data()
+    if sim_load:
+        load_data()
+    else:
+        download_data()
     #maybe add load here to save time...if data file already downlaoded
 else:
     rprint ("Loading data.")
@@ -475,7 +488,7 @@ if command == True and bulk == False:
 #
 #------------------------------------------------------------------
 
-marlin_game = IdentGame(application, optimisationDataManager)
+marlin_game = IdentGame(application, optimisationDataManager, activation_level = my_activation_level)
 
 
 if application.mode == 0:
