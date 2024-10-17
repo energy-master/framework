@@ -23,6 +23,7 @@ if (len(sys.argv) > 1):
     min_f = float(sys.argv[2])
     max_f = float(sys.argv[3])
     
+    
 sim_ids = []
 for arg in range(4,len(sys.argv)):
     sim_ids.append(sys.argv[arg])
@@ -151,8 +152,11 @@ with open(f'{report_out_path}/{frequency_profile}', 'w') as f:
 delta_t = 0.25
 
 study_frequency_profile = {}
+entropy_list = []
 
-
+min_f = 0
+max_f = 300
+delta_f = 50
 for env_pressure in data_feed:
     
     listen_start_idx = 0
@@ -172,7 +176,7 @@ for env_pressure in data_feed:
         listen_end_idx = listen_start_idx + listen_delta_idx
         slice_start = listen_start_idx
         slice_end = min(listen_end_idx,env_pressure_length-1)
-    
+
         # --- get datetime ---  # 2014-08-22 15:53:18.500000
         _s = (slice_start / env_pressure.meta_data['sample_rate']) * 1000 # ms 
         iter_start_time =  env_pressure.start_time + timedelta(milliseconds=_s)
@@ -181,31 +185,45 @@ for env_pressure in data_feed:
         print (f'time vector bounds : {iter_start_time} : {iter_end_time}')
         
         derived_data = data_adapter.multiple_derived_data[env_pressure.meta_data['snapshot_id']]
-        e_n = grab_entropy_across_f_bins(listen_start_idx, derived_data, env_pressure.meta_data['sample_rate'])
+        # e_n = grab_entropy_across_f_bins(listen_start_idx, derived_data, env_pressure.meta_data['sample_rate'])
+        # entropy_list.append(e_n)
         
-        with open(f'{report_out_path}/{entropy_profile}', 'a+') as f:
-            f.write(f'{iter_start_time},{e_n} \n')
+        # with open(f'{report_out_path}/{entropy_profile}', 'a+') as f:
+        #     f.write(f'{iter_start_time},{e_n} \n')
         
-        e_f_n = grab_entropy_at_f_t(2,derived_data,iter_start_time, min_f, max_f)
-        #e_f_n = 0.0
-        # print(e_n)
-        with open(f'{report_out_path}/{entropy_f_profile}', 'a+') as f:
-            f.write(f'{iter_start_time},{e_f_n} \n')
+        # e_f_n = grab_kurtosis_at_f_t(2,derived_data,iter_start_time,delta_f)
+        # #e_f_n = 0.0
+        # # print(e_n)
+        # with open(f'{report_out_path}/{entropy_f_profile}', 'a+') as f:
+        #     f.write(f'{iter_start_time},{e_f_n} \n')
         
         
-        # -- study frequency profile
-        build_f_profile(iter_start_time, derived_data, study_frequency_profile)
+        # -- study data
+        #build_f_profile(iter_start_time, derived_data, study_frequency_profile)
+        build_f_profile_vector(iter_start_time, iter_end_time,derived_data, study_frequency_profile)
+        
+       
         
         # update listen start idx
         listen_start_idx = listen_end_idx
         
 frequency_hist = calculate_study_frequency_profile(study_frequency_profile)
-print (frequency_hist)
+entropy_stats = calculate_entropy_stats(entropy_list)
+
+#print (frequency_hist)
 
 
 with open(f'{report_out_path}/{frequency_profile}', 'a+') as f:
     for idx, value in frequency_hist.items():
         f.write(f'{idx},{value}\n')
+  
+        
+# for k,v in kurtosis_tracker.items():
+#     with open(f'{report_out_path}/kurt_{k}_{study_id}.csv', 'w') as f:
+#         f.write(f'time,kurtosis\n')
+#         for idx, value in enumerate(v):
+#             f.write(f'{idx},{value}\n')
+
 
 
 
