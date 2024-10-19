@@ -140,6 +140,7 @@ for active_ssid in sim_ids:
 entropy_profile = f'entropy_profile_{study_id}.csv'
 entropy_f_profile = f'entropy_freq_profile_{study_id}.csv'
 frequency_profile = f'frequency_profile_{study_id}.csv'
+
 with open(f'{report_out_path}/{entropy_profile}', 'w') as f:
     f.write('time,entropy\n')
     
@@ -149,7 +150,7 @@ with open(f'{report_out_path}/{entropy_f_profile}', 'w') as f:
 with open(f'{report_out_path}/{frequency_profile}', 'w') as f:
     f.write('time,frequency\n')
     
-delta_t = 0.25
+delta_t = 0.2
 
 study_frequency_profile = {}
 entropy_list = []
@@ -169,7 +170,7 @@ for env_pressure in data_feed:
     times = []
     hits = [] # list of label hits for game mode 1
     idx_iter = 0
-    
+    idx = 0
     while listen_start_idx < (env_pressure_length - listen_delta_idx):
         
         # --- get start & end slice idx ---
@@ -200,8 +201,9 @@ for env_pressure in data_feed:
         
         # -- study data
         #build_f_profile(iter_start_time, derived_data, study_frequency_profile)
-        build_f_profile_vector(iter_start_time, iter_end_time,derived_data, study_frequency_profile)
-        
+        f_path = f'{report_out_path}/f_p_{idx}_{study_id}.png'
+        build_f_profile_vector(iter_start_time, iter_end_time,derived_data, study_frequency_profile, f_path)
+        idx+=1
        
         
         # update listen start idx
@@ -224,6 +226,7 @@ with open(f'{report_out_path}/{frequency_profile}', 'a+') as f:
 #         for idx, value in enumerate(v):
 #             f.write(f'{idx},{value}\n')
 
+os.system(f'ffmpeg -r 5  -s 1920x1080 -i {report_out_path}/f_p_%d_{study_id}.png -vcodec libx264 -crf 25 -pix_fmt yuv420p {report_out_path}/{study_id}_fp.mp4') 
 
 
 
