@@ -150,7 +150,7 @@ with open(f'{report_out_path}/{entropy_f_profile}', 'w') as f:
 with open(f'{report_out_path}/{frequency_profile}', 'w') as f:
     f.write('time,frequency\n')
     
-delta_t = 1
+delta_t = 0.05
 
 study_frequency_profile = {}
 entropy_list = []
