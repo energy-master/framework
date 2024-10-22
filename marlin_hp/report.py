@@ -150,7 +150,7 @@ with open(f'{report_out_path}/{entropy_f_profile}', 'w') as f:
 with open(f'{report_out_path}/{frequency_profile}', 'w') as f:
     f.write('time,frequency\n')
     
-delta_t = 0.2
+delta_t = 1
 
 study_frequency_profile = {}
 entropy_list = []
@@ -171,7 +171,8 @@ for env_pressure in data_feed:
     hits = [] # list of label hits for game mode 1
     idx_iter = 0
     idx = 0
-    while listen_start_idx < (env_pressure_length - listen_delta_idx):
+    # while listen_start_idx < (env_pressure_length - listen_delta_idx):
+    while listen_start_idx < (env_pressure_length):
         
         # --- get start & end slice idx ---
         listen_end_idx = listen_start_idx + listen_delta_idx

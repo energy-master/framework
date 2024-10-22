@@ -98,13 +98,18 @@ def build_f_profile(time, derived_data, frequency_energy_profile):
 def build_f_profile_vector(time_s, time_e, derived_data, frequency_energy_profile, f_path):
     no_stat_cnt = 0
     current_frequency_energy_profile = {}
+    max_e = 0
     for k,v in derived_data.fast_index_energy_stats.items():
         
         stats_v = derived_data.query_stats_vector_freq_index(k, time_s, time_e)
         energy = 0
+        #print (stats_v)
+        
         for domain in stats_v:
+            # print (domain.stats)
             if 'max_energy' in domain.stats:
-                energy += domain.stats['max_energy']    
+                energy = domain.stats['max_energy']   
+                max_e = max(max_e, energy)
                 if k in frequency_energy_profile:
                     frequency_energy_profile[k].append(energy)
                 else:
@@ -116,7 +121,42 @@ def build_f_profile_vector(time_s, time_e, derived_data, frequency_energy_profil
                 else:
                     current_frequency_energy_profile[k] = []
                     current_frequency_energy_profile[k].append(energy)
+        
+        # print (f'max e : {max_e}')            
+        # for domain in stats_v:
+        #     print (domain.stats)
+        #     if 'mean_energy' in domain.stats:
+        #         energy += domain.stats['mean_energy']    
+        #         if k in frequency_energy_profile:
+        #             frequency_energy_profile[k].append(energy)
+        #         else:
+        #             frequency_energy_profile[k] = []
+        #             frequency_energy_profile[k].append(energy)
+                
+        #         if k in current_frequency_energy_profile:
+        #             current_frequency_energy_profile[k].append(energy)
+        #         else:
+        #             current_frequency_energy_profile[k] = []
+        #             current_frequency_energy_profile[k].append(energy)
+        
+        # for domain in stats_v:
+        #     print (domain.stats)
+        #     if 'mean_energy' in domain.stats:
+        #         energy += domain.stats['mean_energy']    
+        #         if k in frequency_energy_profile:
+        #             frequency_energy_profile[k].append(energy)
+        #         else:
+        #             frequency_energy_profile[k] = []
+        #             frequency_energy_profile[k].append(energy)
+                
+        #         if k in current_frequency_energy_profile:
+        #             current_frequency_energy_profile[k].append(energy)
+        #         else:
+        #             current_frequency_energy_profile[k] = []
+        #             current_frequency_energy_profile[k].append(energy)
     
+        # print (frequency_energy_profile[0])
+        # exit()
     
     index_vals = []
     energy_vals = []
@@ -124,8 +164,8 @@ def build_f_profile_vector(time_s, time_e, derived_data, frequency_energy_profil
         index_vals.append(freq)
         energy_vals.append(float(sum(energy_vector)/ len(energy_vector)))
     
-    print(len(index_vals))  
-    print(len(energy_vals))  
+    # print(len(index_vals))  
+    # print(len(energy_vals))  
     plt.bar(index_vals,energy_vals)
     plt.savefig(f_path)
     plt.clf()
@@ -133,12 +173,16 @@ def build_f_profile_vector(time_s, time_e, derived_data, frequency_energy_profil
 def calculate_study_frequency_profile(study_frequency_profile):
     frequency_hist = {}
     for f_index, value in study_frequency_profile.items():
+        # print (study_frequency_profile[f_index])
+        # exit()
         sum_energy = sum(value)
         # print (sum_energy)
         avg_energy = float(sum_energy/len(value))
         # print (avg_energy)
         frequency_hist[f_index] = avg_energy
-        
+        # print (frequency_hist[f_index])
+    
+    
     return frequency_hist
 
 def calculate_entropy_stats(entropy_list):
