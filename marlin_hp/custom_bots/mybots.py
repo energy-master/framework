@@ -20,8 +20,8 @@ class testBot(object):
 
 class AcousticBot(BotRoot):
     
-    def __init__(self, myenv="", myspecies = "acoustic_bot", myargs=None):
-        super().__init__(myenv=myenv, myspecies = myspecies, myargs=myargs)
+    def __init__(self, myenv="", myspecies = "acoustic_bot", myargs=None, version="1_0_0"):
+        super().__init__(myenv=myenv, myspecies = myspecies, myargs=myargs, version=version)
 
 
         

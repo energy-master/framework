@@ -127,90 +127,43 @@ class SpeciesIdent(object):
     
     def generation_reset(self):
         self.performance = performance.Performance()
-
-    def load_bots(self, filter_data, version="1_0_0", version_time_from="",version_time_to=""):
-        # print (filter_data)
-        
+    
+    def load_bots(self, filter_data):
         url = 'https://vixen.hopto.org/rs/api/v1/data/features'
-        post_data = {'market': filter_data, 'version_time_from' : version_time_from, 'version_time_to' : version_time_to}
-        
-        
-        # print (url)
-        # print (post_data)
+        post_data = {'market': filter_data}
+        print (url)
+        print (post_data)
         
         x = requests.post(url, json = post_data)
         data  = x.json()
         number_loaded = 0
-        number_read = 0
-        
-        versions_list  = version.split('/')
-        
-        
         for key in data["data"]:
-            number_read+=1
+            
             bot_id = key['botID']
             
             bot_dir = "/home/vixen/rs/dev/marlin_hp/marlin_hp/bots"
             bot_path = f'{bot_dir}/{bot_id}.vixen'
             # print (bot_path)
             error = False
-            # print (f'loading {version}')
             
-            
-
             try:
                 bot = load_bot(bot_path)
                 # print (bot)
-                # exit()
-                
-                add = True
-                    
-                for k,v in bot.dNA.items():
-                    for kg,vg in v.genome.items():
-                        for kgg, vgg in vg.genome.items():
-                            if vgg.condition == 'EnergyProfileFluxIndexPersistent':
-                                # print (vgg.condition)
-                                add = False
-                                continue
-                            
-                
-                
-                if hasattr(bot, 'version'):
-                    
-                    # print (bot)
-                    if bot.version not in versions_list:
-                        add = False
-                        continue
-                    else:
-                        print (f'v: {bot.version} | {versions_list}')
-                        
-                
-                else:
-                    if "1_0_0" != version:
-                        add = False
-                        continue
-                
-                if add:
-                    print ('adding bot to game')
-                    self.loaded_bots[bot_id] = bot
-                    number_loaded+=1
-                    if number_loaded > float(number_features):
-                        break
-            except Exception as e:
+                self.loaded_bots[bot_id] = bot
+            except:
                 error = True
-                # print (f'error loading {bot_id} {type(e).__name__}')
+                # print (f'error loading {bot_id}')
                 
             if  error == False:
-                pass
+                number_loaded+=1
+                if number_loaded > float(number_features):
+                    break
                 # print (f'success loading {bot_id}')
-            
             
         
         self.mode = 1
         self.bulk = 1
         print (f'number loaded : {number_loaded}')
-        print (f'number read : {number_read}')
-        shell_config['number_working_features'] = number_loaded
         
     
     def run(self):
@@ -252,16 +205,7 @@ user_activation_level = sys.argv[5]
 user_threshold_above_e = sys.argv[6]
 number_features = sys.argv[7]
 user_similarity_threshold = sys.argv[8]
-feature_version = sys.argv[9]
-time_version_from = ""
-time_version_to = ""
-if len(sys.argv) >= 11:
-    time_version_from = f'{sys.argv[10]} {sys.argv[11]}'
-if len(sys.argv) >= 12:
-    time_version_to = f'{sys.argv[12]} {sys.argv[13]}'
-   
-
-
+new_game_id = sys.argv[9]
 filename_ss_id = filename.split('_')[0]
 
 shell_config = {}
@@ -273,11 +217,8 @@ shell_config['user_activation_level'] = sys.argv[5]
 shell_config['user_threshold_above_e'] = sys.argv[6]
 shell_config['number_features'] = sys.argv[7]
 shell_config['similarity_threshold'] = sys.argv[8]
-shell_config['feature_version'] = sys.argv[9]
-shell_config['time_version_from'] = time_version_from
-shell_config['time_version_to'] = time_version_to
+shell_config['new_game_id'] = sys.argv[9]
 
-# print (shell_config)
 
 # sample_rate =   sys.argv[4]
 
@@ -285,7 +226,7 @@ shell_config['time_version_to'] = time_version_to
 # target file for raw data
 
 # create new run in db
-# send_new_run(filename, target, user_uid, location, json.dumps(shell_config))
+send_new_run(new_game_id, target, user_uid, location, json.dumps(shell_config))
 
 
 file_path = f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_data/{filename_ss_id}.wav'
@@ -364,13 +305,13 @@ for snapshot in data_feed:
     s_id = snapshot.meta_data['snapshot_id']
     # print (f'{snapshot.meta_data}')
     if not os.path.isfile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da'):
-        update_run(filename,1)
+        update_run(new_game_id,1)
         print (f'Building derived data feed structure {s_id}')
         
         snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot,  f_min = 115000, f_max = 145000)
         data_adapter.derived_data.ft_build_band_energy_profile(sample_delta_t=0.01, simulation_data=snapshot,discrete_size = 500)
     else:
-        update_run(filename,2)
+        update_run(new_game_id,2)
         data_avail = True
         print ("Derived data already available.")
     # # with open(f'{s_id}_.der', 'wb') as f:  # open a text file
@@ -379,21 +320,21 @@ for snapshot in data_feed:
 
 
 
-if not data_avail:
-    update_run(filename,3)
-    print ('saving')
-    with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da', 'wb') as f:  # open a text file
-        pickle.dump(data_adapter.derived_data, f) # serialize the list
+# if not data_avail:
+#     update_run(new_game_id,3)
+#     print ('saving')
+#     with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da', 'wb') as f:  # open a text file
+#         pickle.dump(data_adapter.derived_data, f) # serialize the list
 
 
 
-if data_avail:
-    update_run(filename,4)
-    print ("Loading data as saved data available.")
-    data_adapter.derived_data = None
-    with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da', 'rb') as f:  # open a text file
-        tmp_derived_data = pickle.load(f) 
-        data_adapter.derived_data = tmp_derived_data
+# if data_avail:
+#     update_run(new_game_id,4)
+#     print ("Loading data as saved data available.")
+#     data_adapter.derived_data = None
+#     with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da', 'rb') as f:  # open a text file
+#         tmp_derived_data = pickle.load(f) 
+#         data_adapter.derived_data = tmp_derived_data
         
 
 # ---- Data has been initialised -----
@@ -404,55 +345,59 @@ if data_avail:
 
 # exit()
 
+game_file_name = f'/home/vixen/html/rs/ident_app/ident/brahma/out/game_{filename}.game'
 
-algo_setup = AlgorithmSetup(config_file_path="/home/vixen/rs/dev/marlin_hp/marlin_hp/config.json")
+with open(game_file_name, 'rb') as f:
+    marlin_game = pickle.load(f)
+    
+# algo_setup = AlgorithmSetup(config_file_path="/home/vixen/rs/dev/marlin_hp/marlin_hp/config.json")
 
-application = SpeciesIdent(algo_setup)
-application.ss_ids = sim_ids
+# application = SpeciesIdent(algo_setup)
+# application.ss_ids = sim_ids
 
-application.derived_data = data_adapter.derived_data 
-application.data_feed = data_feed
+# # application.derived_data = data_adapter.derived_data 
+# application.data_feed = data_feed
 
 # ------------------------------------------------------------------
 #
 #   Bot(s) download for forward testing
 #
 # ------------------------------------------------------------------
-application.load_bots(target, version=feature_version, version_time_from = time_version_from,  version_time_to = time_version_to)
-# exit()
-application.mode = 1
-# create new run in db
-# send_new_run(filename, target, user_uid, location, json.dumps(shell_config))
+# application.load_bots(target)
+# application.mode = 1
 
 
 #------------------------------------------------------------------
 #
-# World and Data Initialised. Let's play the game.
+# World and Data Initialised. Let's RE - play the game.
 #
 #------------------------------------------------------------------
 
-marlin_game = IdentGame(application, None, activation_level = user_activation_level)
-marlin_game.game_id = filename
 
+    
+# marlin_game = IdentGame(application, None, activation_level = user_activation_level)
+marlin_game.game_id = new_game_id
+print (f'marlin_game_id : {marlin_game.game_id}')
+# set new game id
 
 from layer_three import *
 from utils import *
 
-if application.mode == 1:
+if marlin_game.game.mode == 1:
     
-    update_run(filename,5)
+    update_run(new_game_id,5)
     print("*** START BOT ***")
     
     # show init f dist
     frequency_activity = []
-    for feature in list(application.loaded_bots.values()):
+    for feature in list(marlin_game.game.loaded_bots.values()):
         # print (feature.dNA[0].genome)
         for k,v in feature.dNA.items():
             for kg,vg in v.genome.items():
                 for kgg, vgg in vg.genome.items():
                     # if 'frequency_index' in vgg:
                     idx = vgg.frequency_index
-                    f = application.derived_data.min_freq + (idx *  (application.derived_data.index_delta_f))
+                    f = marlin_game.game.derived_data.min_freq + (idx *  (marlin_game.game.derived_data.index_delta_f))
                     frequency_activity.append(f)
     
     
@@ -460,140 +405,53 @@ if application.mode == 1:
     plot_hist(frequency_activity, filename_)
     # print (filename)
     
-    #get total time:
-    s_interval = 5
-    number_runs = math.floor(duration_s / s_interval)
-    delta_idx = s_interval * sample_rate
+    # marlin_game.run_bot()
+    # marlin_game.run_bot()
     
-    send_new_run(filename, target, user_uid, location, json.dumps(shell_config))
-    end_idx = 0
-    
-    all_decisions = {}
-    
-    combined_bulk_energies = {}    
-    combined_bulk_times = {}
-    combined_active_features = {}
-    
-    print (f'number_runs {number_runs}')
-    
-    for run_i in range(0,number_runs):
-        
-        print (f'running {run_i} iteration')
-        if run_i == number_runs:
-            break
-        sub_filename = f'{filename}_{run_i}'
-        send_new_run(sub_filename, target, user_uid, location, json.dumps(shell_config))
-        
-        start_idx = end_idx
-        end_idx = start_idx+delta_idx
-        
-        marlin_game.active_features = {}
-        marlin_game.run_bot_mt(sub_filename=sub_filename, start_idx=start_idx, end_idx=end_idx)
-        
-        # print (marlin_game.bulk_energies)
-        # print (len(marlin_game.bulk_times))
-        # print (marlin_game.number_run_idx)
-        
-        
-        for k,v in marlin_game.bulk_energies.items():
-            energies_d = v
-            for ke, ve in v.items():
-                if k not in combined_bulk_energies:
-                    combined_bulk_energies[k] = {}
-                    
-                combined_bulk_energies[k][ke+(run_i*(marlin_game.number_run_idx+1))] = ve
-                
-
-        for k,v in marlin_game.bulk_times.items():
-            combined_bulk_times[k+(run_i*(marlin_game.number_run_idx+1))] = v
-            
-        for k,v in marlin_game.active_features.items():
-            combined_active_features[k+(run_i*(marlin_game.number_run_idx+1))] = v
-        
-        # print (marlin_game.bulk_times)
-        for k,v in combined_bulk_energies.items():
-            print (f'le : {len(v)}')
-            break
-    
-        for k,v in marlin_game.bulk_energies.items():
-            print (f'mge : {len(v)}')
-            break
-        
-        # marlin_game.run_bot()
-        
-        # save game
-        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/game_{sub_filename}.game', 'wb') as f:
-            pickle.dump(marlin_game, f)
-        
-        
-        #write all decisions to json
-        update_run(sub_filename,11)
-        # print (marlin_game.active_features)
-        # print (marlin_game.bulk_times)
-        # layer_3 = Layer_Three(activation_level = user_activation_level,threshold_above_activation = user_threshold_above_e, derived_data = application.derived_data, similarity_threshold = user_similarity_threshold, run_id=filename, target=target)
-        layer_3 = Layer_Three(activation_level = user_activation_level,threshold_above_activation = user_threshold_above_e, derived_data = application.derived_data, similarity_threshold = user_similarity_threshold, run_id=filename, target=target)
-        freq = layer_3.run_layer(marlin_game.bulk_energies, marlin_game.bulk_times,active_features=marlin_game.active_features, all_features=list(marlin_game.game.loaded_bots.values()) )
-
-        
-        
-        
-        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/decisions_{sub_filename}.json', 'w') as fp:
-            json.dump(layer_3.decisions, fp)
-        
-        
-        update_run(sub_filename,12)
-
-        hits = []
-        decisions = layer_3.decisions
-        a_ratio = layer_3.ratio_active
-        print (f't: {len(marlin_game.bulk_times)}')
-        print (f'd: {len(layer_3.ratio_active)}')
-        print (f'c_t :{len(combined_bulk_times)}')
-        # print (f'c_d :{len(combined_bulk_energies)}')
-        
-        for env_pressure in marlin_game.game.data_feed:
-            # print (env_pressure)
-
-            build_spec_upload(env_pressure, sub_filename, hits = hits, decisions = decisions, peak=a_ratio, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq)
-                
-        
-        update_run(sub_filename,13)
-    
-    
-    update_run(filename,12)
-    
-    # print (combined_bulk_energies)
-    
-    for k,v in combined_bulk_energies.items():
-        print (len(v))
-        break
-        
-    # print (combined_bulk_times)
-    # print (len(combined_bulk_times))
-    
-    marlin_game.bulk_times = combined_bulk_times
-    marlin_game.bulk_energies = combined_bulk_energies
-    marlin_game.active_features = combined_active_features
-    
-    
-    layer_3 = Layer_Three(activation_level = user_activation_level,threshold_above_activation = user_threshold_above_e, derived_data = application.derived_data, similarity_threshold = user_similarity_threshold, run_id=filename, target=target)
-    freq = layer_3.run_layer(marlin_game.bulk_energies, marlin_game.bulk_times, active_features=marlin_game.active_features, all_features=list(marlin_game.game.loaded_bots.values()) )
-    # print (len(layer_3.ratio_active))
     # save game
-    with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/game_{filename}.game', 'wb') as f:
+    # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/game_{filename}.game', 'wb') as f:
+    #     pickle.dump(marlin_game, f)
+    # save game
+    with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/game_{new_game_id}.game', 'wb') as f:
         pickle.dump(marlin_game, f)
     
     
-    with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/decisions_{filename}.json', 'w') as fp:
-            json.dump(layer_3.decisions, fp)
-    for env_pressure in marlin_game.game.data_feed:
-        build_spec_upload(env_pressure, filename, hits = hits, decisions = layer_3.decisions, peak=layer_3.ratio_active, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq)
-            
-    update_run(filename,13)
-        
+    #write all decisions to json
+    update_run(new_game_id,11)
     
-        
-        
+    layer_3 = Layer_Three(activation_level = user_activation_level,threshold_above_activation = user_threshold_above_e, derived_data = marlin_game.game.derived_data, similarity_threshold = user_similarity_threshold, run_id=filename, target=target)
+    freq = layer_3.run_layer(marlin_game.bulk_energies, marlin_game.bulk_times,active_features=marlin_game.active_features, all_features=list(marlin_game.game.loaded_bots.values()) )
+    
+    # print (marlin_game.bulk_times)
+    
+    with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/decisions_{marlin_game.game_id}.json', 'w') as fp:
+        json.dump(layer_3.decisions, fp)
+
+    update_run(new_game_id,12)
+
+    hits = []
+    decisions = layer_3.decisions
+    
+    for env_pressure in marlin_game.game.data_feed:
+        # print (env_pressure)
+        build_spec_upload(env_pressure, marlin_game.game_id, hits = hits, decisions = decisions, peak=layer_3.peak_energies, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq)
+             
+
+    # dump group energies and times with new filename
+    
+    with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies_{marlin_game.game_id}.json', 'w+') as f:
+        json.dump(marlin_game.bulk_energies,f)  
+         
+    # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_times_{self.game.ss_ids[0]}.json', 'w+') as f:
+    with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_times_{marlin_game.game_id}.json', 'w+') as f:
+    
+        json.dump(marlin_game.bulk_times,f)  
+    
+    update_run(new_game_id,13)
+    
+   
+    
+    
 
 
 

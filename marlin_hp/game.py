@@ -10,6 +10,7 @@ from rich.progress import Progress
 from utils import *
 import traceback
 import pytz
+from io_custom import *
 # brahma
 # IMPORT BRAHMA 
 # import evolutionary procedures
@@ -18,8 +19,8 @@ import marlin_brahma.world.population as pop
 from marlin_brahma.fitness.performance import RootDecision
 import marlin_brahma.fitness.performance as performance
 from marlin_brahma.evo.brahma_evo import *
-
-
+# import threading
+from multiprocessing import Process, Queue
 # decision
 # --- Define bespoke decision logic --
 DECISION_FOLDER_USR = os.path.join('/','home','vixen', 'rs','dev', 'marlin_hp', 'marlin_hp', 'custom_decisions', '')
@@ -33,7 +34,7 @@ gene_limits = None
 with open("/home/vixen/rs/dev/marlin_hp/marlin_hp/gene_limits.json", 'r') as config_f:
     gene_limits = json.load(config_f)
 
-print (gene_limits)
+
 
 
 class TracePrints(object):
@@ -59,10 +60,18 @@ class IdentGame(object):
         self.bulk_times = {}
         self.activation_level = activation_level
         
+        
+        self.active_features = {}
+        
+        self.run_stats = {}
+        self.collect_stats = True
+        
+        self.number_run_idx = 0
+        
     def world_step(self):
         pass
     
-    def bot_step(self, bot = None, generation=0):
+    def bot_step(self, bot = None, generation=0, listen_start_idx = 0, step_end_index = 0):
         if bot is not None:
             # print (f'{bot.name} Start')
             # reset data feed for new iteration
@@ -101,19 +110,32 @@ class IdentGame(object):
                 
                 # print (f'Running {pressure_id} for {bot.name}')
                 
-                listen_start_idx = 0
-                listen_end_idx = 0
+                
+                
                 # print (env_pressure.meta_data['snapshot_id'])
                 listen_delta_idx = math.floor(self.game.algo_setup.args['listen_delta_t'] * env_pressure.meta_data['sample_rate'])
-                env_pressure_length = env_pressure.frequency_ts_np.shape[0]
+                
+                
+                env_pressure_length = 0
+                if step_end_index == 0:
+                    env_pressure_length = env_pressure.frequency_ts_np.shape[0]
+                else:
+                    env_pressure_length = step_end_index
+                
                 sample_rate = env_pressure.meta_data['sample_rate']
                 energies = []
                 times = []
                 hits = [] # list of label hits for game mode 1
                 idx_iter = 0
+                listen_end_idx = 0
+                
+                
+                feature_bot_names = {}
                 
                 while listen_start_idx < (env_pressure_length - listen_delta_idx):
-                    
+                # while listen_start_idx < (env_pressure_length):
+                    self.number_run_idx = max(self.number_run_idx, idx_iter)
+                    # print (self.number_run_idx)
                     # --- get start & end slice idx ---
                     listen_end_idx = listen_start_idx + listen_delta_idx
                     slice_start = listen_start_idx
@@ -125,7 +147,7 @@ class IdentGame(object):
                     # print (iter_start_time)
                     _s = (slice_end / env_pressure.meta_data['sample_rate']) * 1000
                     iter_end_time   =  env_pressure.start_time  + timedelta(milliseconds=_s)
-                    print (f'time vector bounds : {iter_start_time} : {iter_end_time}')
+                    # print (f'time vector bounds : {iter_start_time} : {iter_end_time}')
                     
                     # --- express bot ---
                     # [nb. data structure is passed to individual genes if dna is initialised.
@@ -153,12 +175,12 @@ class IdentGame(object):
                     t_m = (t_start_s + t_end_s)/2                        
                     times.append(t_m)
                     if express_level == 0:
-                        express_level = random.uniform(0.05,0.2)
-                    if express_level > 0.8:
-                        express_level = random.uniform(0.8,1.0)
+                        express_level = random.uniform(0.05,0.1)
+                    if express_level > 0.95:
+                        express_level = random.uniform(0.95,1.0)
                         
                     if self.game.mode == 1 and self.game.bulk == 1:
-                        
+                        # print (f'running : {idx_iter} | {bot.name}')
                         self.bulk_energies[bot.name][idx_iter] = express_level
                         #print (iter_start_time)
                         #print (iter_start_time.strftime("%Y:%M:%d %H:%M:%S.%f +0000"))
@@ -170,7 +192,16 @@ class IdentGame(object):
                         # print (iter_start_time.utcnow())
                         # utc_tz = pytz.timezone('UTC')
                         self.bulk_times[idx_iter] = date_string
-
+                        if float(express_level) > float(self.activation_level):
+                            # print (f'adding active feature in time_frame : {idx_iter}')
+                            if idx_iter not in self.active_features:
+                                self.active_features[idx_iter] = []
+                                # feature_bot_names[idx_iter] = []
+                                
+                            # if bot not in feature_bot_names[idx_iter]:
+                                # feature_bot_names[idx_iter].append(bot.name)
+                            self.active_features[idx_iter].append(bot)
+                                
                         # print (self.bulk_times[idx_iter])
                         idx_iter += 1
                     
@@ -181,9 +212,11 @@ class IdentGame(object):
                     }
                     
                     transcribe_result = bot.transcriptionDNA.transcribe(transcription_data, self.activation_level)
+
+                    
                    
-                    print (express_level)
-                    # Build labeled dataset here in order to view in spectrogrma image
+                    # print (express_level)
+                    # # Build labeled dataset here in order to view in spectrogrma image
                     #-----
                     if self.game.mode == 1:
                         xr_hits = self.game.derived_data.query_label_time(iter_start_time, iter_end_time)
@@ -192,7 +225,7 @@ class IdentGame(object):
                         else:
                             hits.append(0)
                 
-                
+
                     
                     # transcribe_result = True # force transcription
                     # ======Decision & Marking=========================
@@ -210,10 +243,16 @@ class IdentGame(object):
                             'epoch' : pressure_id
                         }
                         
+                        record_decision = {
+                            'env' : self.game.algo_setup.args['env'],
+                            'type' : "HP Ident",
+                            'epoch' : pressure_id
+                        }
+                        
                         new_decision = IdentDecision(decision_data=decision_args)
                         self.game.performance.add_decision(decision=new_decision, epoch = env_pressure.meta_data['snapshot_id'], botID = bot.name)
                         
-                        
+                        self.all_decisions[iter_start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")] = record_decision
                         # ================================================
                         # query dataset to mark decision
                         # ================================================
@@ -279,7 +318,9 @@ class IdentGame(object):
                 
                 pressure_end = time.time()
                 run_time = pressure_end - pressure_start
-                #print (f'time to run [1] life : {run_time}')
+                print (f'number iters : {idx_iter}')
+                print (f'time to run [1] life : {run_time} {bot.name}')
+                print (f'time to express : {express_time} {bot.name}')
                 outfile_name = f'{pressure_id}_{bot.name}.out' 
                 console_name= f'{pressure_id}_{bot.name}_console.txt'
                 decision_name = f'{pressure_id}_{bot.name}_decisions.csv'
@@ -297,13 +338,18 @@ class IdentGame(object):
                 #         f.write(decision_text)
                         
                     
+                # print (f'fileout {file_out}')
+                # print (f'bulk {self.game.bulk}')
+                # print (f'mode {self.game.mode}')
+                # exit()
+                
                 
                 if file_out:
                     
                     
                     
                     decision_text = self.game.performance.showBotDecisions(bot_name=bot.name)
-                    print (decision_text)
+                    # print (decision_text)
                     
                     with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/{decision_name}', 'w') as f:
                         f.write(decision_text)
@@ -353,27 +399,151 @@ class IdentGame(object):
                 decision_name = f'{bot.name}_{generation}_decisions.csv'
                 with open(f'/home/vixen/html/rs/ident_app/ident_gui/brahma/out/decision_out/{decision_name}', 'w') as f:
                     f.write(decision_text)
+             
+             
+    def run_bot_mt(self, sub_filename = "", start_idx=0, end_idx=0):
+        self.mt_bulk_energies = {}
+        self.mt_bulk_times = {}
+        mt_res = []
+        print ("Running Live")
+        
+        self.game.generation_reset()
+        
+        n = 15
+        
+        # apply thread
+        # print (list(self.game.loaded_bots.keys()))
+        feature_ids = list(self.game.loaded_bots.keys())
+        number_bots = len(feature_ids)
+        # print (f'number {number_bots}')
+        delta_f = math.floor(number_bots/n)
+        # print (f'd : {delta_f}')
+        threads = []
+        
+        
+        
+        Q = Queue()
+        for i in range(0,n):
+            mt_bots = {}
+            for j in range((i*delta_f),((i*delta_f)+delta_f)):
+                if j < number_bots:
+                    # print (j)
+                    # print (f'{(i*(i+delta_f))} : {((i*(i+delta_f))+delta_f)}')
+                    mt_bots[feature_ids[j]]=self.game.loaded_bots[feature_ids[j]]
+
+            # x = threading.Thread(target= self.inner_bot_run_mt, args=(mt_bots,i,))
+            # print (list(mt_bots.keys()))
+            # print (mt_bots)
+            if len(mt_bots) > 0:
+                x = Process(target= self.inner_bot_run_mt, args=[mt_bots,i, Q, start_idx, end_idx])
+                x.start()
+                threads.append(x)
+        
+       
+        for i in range(len(threads)):
+            
+            #resultdict.update(Q.get())
+            mt_res.append(Q.get())
+            
+        
+        for thread in threads:
+            # print ('joining threads')
+            thread.join()
+            thread.terminate()
+        
+        
+        for r in mt_res:
+            energy_data = r['e']
+            for k,v in energy_data.items():
+                self.bulk_energies[k] = v
+        
+        for r in mt_res:
+            a_f = r['af']
+            for k,f in a_f.items():
+                if k not in self.active_features:
+                    self.active_features[k] = []
                     
-                
+                for feature in f:
+                    self.active_features[k].append(feature)
+                    
+        
+        
+        #print (mt_res)
+        self.bulk_times = mt_res[0]['t']
+        self.number_run_idx = mt_res[0]['idx']
+        # and back         
+        # may need to join
+        # print ('writing files')
+        # print (self.bulk_energies)
+        #dump bulk energies if exist
+        # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies_{self.game.ss_ids[0]}.json', 'w+') as f:
+        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies_{sub_filename}.json', 'w+') as f:
+            json.dump(self.bulk_energies,f)  
+        
+        # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_times_{self.game.ss_ids[0]}.json', 'w+') as f:
+        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_times_{sub_filename}.json', 'w+') as f:
+            json.dump(self.bulk_times,f)  
+        
+        
+        update_run(sub_filename,10)   
+        #self.data_manager.closeRun(0)
+              
+    
+    def inner_bot_run_mt(self, mt_bots, thread_id, Q, step_start_idx=0, step_end_idx=0):
+        
+        
+        number_run = 0
+        self.all_decisions = {}
+        run_n = 0
+        for bot_name, bot in mt_bots.items():
+            
+            print(f'run numbr : {run_n}')
+            # try:
+            print(f'thread id : {thread_id}')
+            iter_res = self.bot_step(bot,listen_start_idx = step_start_idx, step_end_index = step_end_idx)
+            print (f'bulk data counter : {len(self.bulk_energies)}')
+            # except:
+            #     print ("erro")
+            run_n += 1 
+        #return [self.bulk_energies, self.bulk_times]
+        # Q.put(self.bulk_energies, self.bulk_times) 
+        res =  {
+            'e' : self.bulk_energies,
+            't' : self.bulk_times,
+            'af' : self.active_features,
+            'idx' : self.number_run_idx
+        }    
+        
+        Q.put(res)              
+               
+         
     def run_bot(self):
         print ("Running Live")
         self.game.generation_reset()
         
+        
+        
         number_run = 0
+        self.all_decisions = {}
         for bot_name, bot in self.game.loaded_bots.items():
             # try:
             iter_res = self.bot_step(bot)
             # except:
             #     print ("erro")
-                        
+                          
+    
         #dump bulk energies if exist
-        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies_{self.game.ss_ids[0]}.json', 'w+') as f:
+        # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies_{self.game.ss_ids[0]}.json', 'w+') as f:
+        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies_{self.game_id}.json', 'w+') as f:
             json.dump(self.bulk_energies,f)  
          
-        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_times_{self.game.ss_ids[0]}.json', 'w+') as f:
+        # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_times_{self.game.ss_ids[0]}.json', 'w+') as f:
+        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_times_{self.game_id}.json', 'w+') as f:
+        
             json.dump(self.bulk_times,f)  
-         
-            
+        
+        
+        update_run(self.game_id,10)   
         #self.data_manager.closeRun(0)
         
             

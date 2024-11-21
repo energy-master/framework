@@ -94,7 +94,9 @@ class EnergyIndexTemporalBound(ConditionalRoot):
         delta_f = 0
         delta_f = abs(stats_ref['max_energy'] - stats_pivot['max_energy'])
     
-    
+        # print (stats_pivot)
+        # print (stats_ref)
+       
         # print (f'avg e : {avg_energy} {self.lower_frequency} - {self.upper_frequency}')
         # print (f'avg e : {avg_energy} {self.lower_frequency} - {self.upper_frequency}')
         if stats_pivot == None or stats_ref == None:
@@ -104,6 +106,7 @@ class EnergyIndexTemporalBound(ConditionalRoot):
 
         else:
             # print (avg_energy)
+            # print (delta_f)
             file_out = False
             if file_out:
                 outfile_name = f'{self.frequency_index}_{self.memory}__deltapower.txt'

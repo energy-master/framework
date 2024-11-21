@@ -7,12 +7,12 @@ Gene : Frequency bounnds gene. Return 1 if True. True if f domain is in range of
 """
 
 version = 1.0
-print (f"EnergyFrequencyBound [{version}]")
+print (f"EnergyIndexTemporalBoundPC [{version}]")
 
 from marlin_brahma.genes.gene_root import *
 import random, json, math
 from datetime import timedelta
-
+import time as t
 
 #{'min_f' : 130000, 'max_f': 150000}
 
@@ -25,7 +25,7 @@ class EnergyIndexTemporalBoundPC(ConditionalRoot):
     """
     
     #print (gene_args)
-    super().__init__(condition='energy_index_temporal_bound', env=env)
+    super().__init__(condition='energy_index_temporal_bound_pc', env=env)
     
     
     max_memory = gene_args['max_memory']
@@ -62,6 +62,7 @@ class EnergyIndexTemporalBoundPC(ConditionalRoot):
   def run(self, data = {}):
     
     import math
+    query_time_start = t.time()
     avg_energy = 0
     
     # get f at timestamps
@@ -84,10 +85,12 @@ class EnergyIndexTemporalBoundPC(ConditionalRoot):
         geneInit = True
         
     if geneInit:
-        
+        # print (f'{current_data_delta_time} | {self.memory}')
         self.Safe()
         stats_pivot = None
         bounds_data = derived_data.query_stats_freq_index(self.frequency_index, iter_start_time)
+        bounds_data_db = bounds_data
+        # print (bounds_data)  
         if bounds_data == None:
           return 0
         stats_pivot = bounds_data.stats
@@ -95,15 +98,25 @@ class EnergyIndexTemporalBoundPC(ConditionalRoot):
         stats_ref = None
         memory_ref_time = iter_start_time - timedelta(milliseconds=self.memory)
         bounds_data = derived_data.query_stats_freq_index(self.frequency_index, memory_ref_time)
+        # print (bounds_data)  
         if bounds_data == None:
           return 0
         stats_ref = bounds_data.stats
+      
+        if 'max_energy' not in stats_ref or 'max_energy' not in stats_pivot:
+            print ('No stats found.')
+            print (bounds_data_db)
+            print (bounds_data)
+            
+            return 0
+        # print ('stats found')
+       
         
         delta_f = 0
-        delta_f = abs(stats_ref['max_energy'] - stats_pivot['max_energy'])
+        delta_f = stats_pivot['max_energy'] - stats_ref['max_energy'] 
         delta_f_pc = (delta_f / max(stats_ref['max_energy'],stats_pivot['max_energy']))  * 100
-       
-       
+        
+        # print (delta_f_pc)
         # print (f'avg e : {avg_energy} {self.lower_frequency} - {self.upper_frequency}')
         # print (f'avg e : {avg_energy} {self.lower_frequency} - {self.upper_frequency}')
         if stats_pivot == None or stats_ref == None:
@@ -111,6 +124,7 @@ class EnergyIndexTemporalBoundPC(ConditionalRoot):
             exit()
             pass
 
+        
         else:
            
             # print (avg_energy)
@@ -122,9 +136,15 @@ class EnergyIndexTemporalBoundPC(ConditionalRoot):
                 self.Safe()
 
             if delta_f_pc > self.energy_threshold:
-                # print (f'trigger {delta_f} > {self.energy_threshold}')
+                # print (f'trigger {delta_f_pc} > {self.energy_threshold} [{self.memory}]')
+                query_time_end = t.time()
+                query_time = query_time_end - query_time_start
+                # print (f'temporal pc 1 : {query_time}')
                 return 1
 
+            query_time_end = t.time()
+            query_time = query_time_end - query_time_start
+            # print (f'temporal pc 0  : {query_time}')
             return 0
     # print ("not init")
     return 0
@@ -135,7 +155,7 @@ class EnergyIndexTemporalBoundPC(ConditionalRoot):
     # print (self.energy_threshold)
     factor = random.uniform(-1,1)
     #factor = 1
-    creep_rate = data['creep_rate']
+    creep_rate = data['pc_threshold_creep_rate']
     
     # #min_f
     # self.lower_frequency = self.lower_frequency + (creep_rate*random.uniform(1,factor))
@@ -145,9 +165,14 @@ class EnergyIndexTemporalBoundPC(ConditionalRoot):
     # self.lower_frequency = min(self.lower_frequency,self.upper_frequency)
     # self.upper_frequency = max(self.lower_frequency,self.upper_frequency)
     
+    # print (f' [1 ] {self.energy_threshold}')
     self.energy_threshold = self.energy_threshold + (creep_rate*factor)
+    # print (f' [1 ] {self.energy_threshold} @ {creep_rate} & {factor}')
     
+    # print (f' [2 ] {self.frequency_index}')
     self.frequency_index = math.floor(random.uniform(max(0,self.frequency_index -5), min(self.max_index,self.frequency_index + 5  , self.frequency_index )) )
+    # print (f' [2 ] {self.frequency_index}')
+    
     #self.frequency_index_two = math.floor(random.uniform(max(0,self.frequency_index_two -5), min(self.max_index,self.frequency_index_two + 5  , self.frequency_index_two ))  )
     # print (f'mutate threshold  : {self.energy_threshold}')
     

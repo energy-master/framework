@@ -8,7 +8,7 @@ from scipy.interpolate import make_interp_spline
 
 from scipy import signal
 from scipy.fft import fftshift
-
+from datetime import datetime
 """
     Game level utils
 """
@@ -36,15 +36,96 @@ def get_bin_f(librosa_f_bins, freq_lower, freq_end):
     print (f'{index_start} | {librosa_f_bins[index_start]} => {index_end} | {librosa_f_bins[index_end]}')
     return index_start, index_end
     
+def plot_hist(frequency_activity, filename):
+    
+    plt.hist(frequency_activity, range = (100000, 200000), bins = 100)
+    plt.savefig(filename)
+    plt.clf()
 
+
+def build_spec_upload(data, game_id,  hits, decisions,peak,avg,times,pc_above_e, f=[] ):
+    
+    
+    if peak != []:
+        peak.append(0.0)
+        avg.append(0.0)
+        pc_above_e.append(0.0)
+    
+   
+    sample_rate = data.meta_data['sample_rate']
+    
+    n_fft = 8192
+    
+    y = data.frequency_ts_np * 40
+    
+    fig, ax1 = plt.subplots(figsize=(8, 8))
+    plt.specgram(y,NFFT=n_fft, Fs=sample_rate, scale="dB",mode="magnitude",cmap="ocean")
+    
+    filepath = f'/home/vixen/html/rs/ident_app/ident/brahma/out/spec/{game_id}.png'
+    plot_time = []
+    
+    for idx in decisions:
+        
+        _t = datetime.strptime(idx['time'],"%Y-%m-%dT%H:%M:%S.%fZ")
+        
+        _s = _t.strftime('%-S.%f')
+        print (_s)
+        plt.plot(float(_s), 100000, 'go')
+
+    
+    for time in times:
+        _t = datetime.strptime(times[time],"%Y-%m-%dT%H:%M:%S.%fZ")
+        _s = _t.strftime('%-S.%f')
+        plot_time.append(float(_s))
+    
+    # for i, val in enumerate(peak):
+    #     if val<0.7:
+    #         peak[i] = 0
+    
+    avg_plot_50 = [((0.5 * 50000) + 200000) for i in avg]
+    pc_above_e_plot_50 = [(((50/100) * 50000) + 250000) for i in pc_above_e]
+    energy_50_plot =  [(((50/100) * 20000)) for i in pc_above_e]
+    
+    peak_plot = [i * 20000 for i in peak]
+    avg_plot = [((i * 50000) + 200000) for i in avg]
+    pc_above_e_plot = [(((i/100) * 50000) + 250000) for i in pc_above_e]
+    
+    
+    
+    color = (0.2, # redness
+         0.4, # greenness
+         0.2, # blueness
+         1.0 # transparency
+        ) 
+    pk_color = (1.0, # redness
+         0.2, # greenness
+         0.4, # blueness
+         1.0 # transparency
+        ) 
+    # print (avg)
+    # print (avg_plot)
+    plt.plot(plot_time,avg_plot,color=pk_color)
+    plt.plot(plot_time,peak_plot,color=pk_color)
+    plt.plot(plot_time,pc_above_e_plot,color=pk_color)
+    plt.plot(plot_time,avg_plot_50,color='w')
+    plt.plot(plot_time,pc_above_e_plot_50,color='w')
+    plt.plot(plot_time,energy_50_plot,color='w')
+    
+    
+    plt.colorbar()
+    
+
+    plt.ylabel('Frequency (Hz)')
+    plt.xlabel('Time (s)')
+    plt.savefig(filepath)
+    plt.clf()
+    
 def build_spec(data,  id, bot_id, n_fft = None, f_min = 0, f_max = 0, custom=0, sr=96000, identifier=0, times=[], energies=[], hits = [], activation_level=0.2):
     print ("building spec")
     
     if custom == 0:
     
     
-    
-        
         e_profile = np.array(energies)
         t_profile = np.array(times)
     
