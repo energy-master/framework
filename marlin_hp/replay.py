@@ -350,6 +350,8 @@ game_file_name = f'/home/vixen/html/rs/ident_app/ident/brahma/out/game_{filename
 with open(game_file_name, 'rb') as f:
     marlin_game = pickle.load(f)
     
+# print (marlin_game.bulk_energies)
+
 # algo_setup = AlgorithmSetup(config_file_path="/home/vixen/rs/dev/marlin_hp/marlin_hp/config.json")
 
 # application = SpeciesIdent(algo_setup)
@@ -434,7 +436,7 @@ if marlin_game.game.mode == 1:
     
     for env_pressure in marlin_game.game.data_feed:
         # print (env_pressure)
-        build_spec_upload(env_pressure, marlin_game.game_id, hits = hits, decisions = decisions, peak=layer_3.peak_energies, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq)
+        build_spec_upload(env_pressure, marlin_game.game_id, hits = hits, decisions = decisions, peak=layer_3.ratio_active, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq)
              
 
     # dump group energies and times with new filename
@@ -448,6 +450,9 @@ if marlin_game.game.mode == 1:
         json.dump(marlin_game.bulk_times,f)  
     
     update_run(new_game_id,13)
+    
+    print (list(marlin_game.game.loaded_bots.values()))
+
     
    
     
