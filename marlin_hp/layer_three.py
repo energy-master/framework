@@ -7,6 +7,7 @@ from utils import *
 # --------------------------------------------------------------
 
 
+    
 class Layer_Three(object):
     
     def __init__(self, activation_level, threshold_above_activation, derived_data = None, similarity_threshold=0.8, run_id="", target=""):
@@ -72,7 +73,7 @@ class Layer_Three(object):
         number_frames = len(time_data)
         print (f'Number frames : {number_frames}')
         print (f'Number of active_features : {len(active_features)}')
-        print (f'Number of all_features : {len(all_features)}')
+        print (f'Number of all features : {len(all_features)}')
         freq = []
         
         for frame_count in range(0,number_frames-1):
@@ -113,13 +114,16 @@ class Layer_Three(object):
             self.avg_energies.append(average_energy)
             self.peak_energies.append(max_energy)
             self.pc_above_tracker.append(score_above)
+            _r = 0.0
             if frame_count in active_features:
+                
                 _r = float(len(active_features[frame_count])/len(all_features))
+                
                 self.ratio_active.append(float(_r))
-                # print (f' ration : {_r}')
                 
             else:
                 self.ratio_active.append(0.0)
+            
             # if float(average_energy) > float(self.activation_level):
             #     self.decisions.append({'time': time_data[frame_count], 'decision': 'ident', 'reason' :'avg_energy'})
             
@@ -131,14 +135,18 @@ class Layer_Three(object):
             freq = []
             
                 
-            
-            # if float(score_above) < float(75):
-            #     if len(active_features)/len(all_features) > 0.1:
-            #         if frame_count in active_features:
-            #             # similarity = self.structure_match.match(features = active_features[frame_count])
-            #             pass
+            print (_r, self.threshold_above_e)
+            # if float(score_above) < float(50):
+            if frame_count in active_features:
+                if float(len(active_features[frame_count])/len(all_features)) > float(self.threshold_above_e):
+                    # similarity = 1.0
+                    # print (float(self.threshold_above_e))
+                    # print (active_features)
+                    # if frame_count in active_features:
+                    similarity = self.structure_match.match(features = active_features[frame_count])
+                            
             self.structure_likelyhood = similarity
-            similarity = 0.0
+            # similarity = 0.0
             if similarity > float(self.similarity_threshold):
                 print (f'looking at frame {frame_count} ')
                 self.decisions.append({'time': time_data[frame_count], 'decision': 'ident',  'reason' :'structure_similarity', 'frame' : frame_count, 'active_freq' : f'https://vixen.hopto.org/rs/ident_app/ident/brahma/out/f_d_{self.run_id}_{frame_count}.png' , 'all_freq' : f'https://vixen.hopto.org/rs/ident_app/ident/brahma/out/f_d_{self.run_id}_{frame_count}_all.png'})
@@ -155,7 +163,6 @@ class Layer_Three(object):
         print (self.decisions)
         
         return freq
-
 
 class harbour_porpoise_structure(object):
     
@@ -209,9 +216,11 @@ class harbour_porpoise_structure(object):
             else:
                 avg_value = frequency_activity[0]    
             
-            print (avg_value)
+            # print (avg_value)
             # if max(avg_value,120000) >= 135000:
-            if avg_value > 131000:
+            # 120 - 140 kHz
+            print (avg_value)
+            if avg_value > 125000:
                 
                 likely_match = 1.0
                 return likely_match

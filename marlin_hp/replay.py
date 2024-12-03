@@ -434,9 +434,9 @@ if marlin_game.game.mode == 1:
     hits = []
     decisions = layer_3.decisions
     
-    for env_pressure in marlin_game.game.data_feed:
+    # for env_pressure in marlin_game.game.data_feed:
         # print (env_pressure)
-        build_spec_upload(env_pressure, marlin_game.game_id, hits = hits, decisions = decisions, peak=layer_3.ratio_active, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq)
+    build_spec_upload(sample_rate,  marlin_game.game_id, hits = hits, decisions = decisions, peak=layer_3.ratio_active, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq, full_raw_data=raw_data)
              
 
     # dump group energies and times with new filename

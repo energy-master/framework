@@ -43,20 +43,31 @@ def plot_hist(frequency_activity, filename):
     plt.clf()
 
 
-def build_spec_upload(data, game_id,  hits, decisions,peak,avg,times,pc_above_e, f=[] ):
+def build_spec_upload(sample_rate, game_id,  hits, decisions,peak,avg,times,pc_above_e, f=[], full_raw_data = [] ):
     
+    
+    start_time_dt = datetime.strptime(times[0],"%Y-%m-%dT%H:%M:%S.%fZ")
+    delta_t_dt = datetime.strptime(times[1],"%Y-%m-%dT%H:%M:%S.%fZ") -  start_time_dt
+    print (delta_t_dt)
+    
+    t_len = len(times)
+    print (f't dim : {t_len}')
     
     if peak != []:
         peak.append(0.0)
         avg.append(0.0)
         pc_above_e.append(0.0)
     
+    
    
-    sample_rate = data.meta_data['sample_rate']
+    # sample_rate = data.meta_data['sample_rate']
     
     n_fft = 8192
-    
-    y = data.frequency_ts_np * 40
+    y=None
+    # if len(full_raw_data) == 0:
+    #     y = data.frequency_ts_np * 40
+    # else:
+    y = full_raw_data
     
     fig, ax1 = plt.subplots(figsize=(8, 8))
     plt.specgram(y,NFFT=n_fft, Fs=sample_rate, scale="dB",mode="magnitude",cmap="ocean")
@@ -75,8 +86,12 @@ def build_spec_upload(data, game_id,  hits, decisions,peak,avg,times,pc_above_e,
     
     for time in times:
         _t = datetime.strptime(times[time],"%Y-%m-%dT%H:%M:%S.%fZ")
-        _s = _t.strftime('%-S.%f')
-        plot_time.append(float(_s))
+        
+        _d_t = _t - start_time_dt
+        
+        plot_time.append(float(_d_t.total_seconds()))
+    
+    
     
     # for i, val in enumerate(peak):
     #     if val<0.7:
@@ -104,12 +119,14 @@ def build_spec_upload(data, game_id,  hits, decisions,peak,avg,times,pc_above_e,
         ) 
     # print (avg)
     # print (avg_plot)
-    plt.plot(plot_time,avg_plot,color=pk_color)
-    plt.plot(plot_time,peak_plot,color=pk_color)
-    plt.plot(plot_time,pc_above_e_plot,color=pk_color)
-    plt.plot(plot_time,avg_plot_50,color='w')
-    plt.plot(plot_time,pc_above_e_plot_50,color='w')
-    plt.plot(plot_time,energy_50_plot,color='w')
+    print (len(plot_time), len(avg_plot))
+    plt.plot(plot_time,avg_plot[0:t_len],color=pk_color)
+    print (len(plot_time), len(peak_plot))
+    plt.plot(plot_time,peak_plot[0:t_len],color=pk_color)
+    plt.plot(plot_time,pc_above_e_plot[0:t_len],color=pk_color)
+    plt.plot(plot_time,avg_plot_50[0:t_len],color='w')
+    plt.plot(plot_time,pc_above_e_plot_50[0:t_len],color='w')
+    plt.plot(plot_time,energy_50_plot[0:t_len],color='w')
     
     
     plt.colorbar()

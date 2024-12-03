@@ -124,8 +124,6 @@ class SpeciesIdent(object):
         self.mode = 0
         self.bulk = 0
         self.ss_ids = []
-        self.multiple_derived_data = None
-        self.multiple_data = -1
     
     def generation_reset(self):
         self.performance = performance.Performance()
@@ -172,7 +170,7 @@ class SpeciesIdent(object):
                         for kgg, vgg in vg.genome.items():
                             if vgg.condition == 'EnergyProfileFluxIndexPersistent':
                                 # print (vgg.condition)
-                                # add = False
+                                add = False
                                 continue
                             
                 
@@ -184,7 +182,7 @@ class SpeciesIdent(object):
                         add = False
                         continue
                     else:
-                        print (f' hit : v: {bot.version} | {versions_list}')
+                        print (f'v: {bot.version} | {versions_list}')
                         
                 
                 else:
@@ -287,7 +285,7 @@ shell_config['time_version_to'] = time_version_to
 # target file for raw data
 
 # create new run in db
-send_new_run(filename, target, user_uid, location, json.dumps(shell_config))
+# send_new_run(filename, target, user_uid, location, json.dumps(shell_config))
 
 
 file_path = f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_data/{filename_ss_id}.wav'
@@ -295,7 +293,7 @@ raw_data, sample_rate = librosa.load(file_path,  sr=int(sample_rate))
 
 # -- META DATA
 # get sample end time
-# start_time = "140822_155229.000000"
+start_time = "140822_155229.000000"
 start_time = "010101_000000.000000"
 start_t_dt = dt.strptime(start_time, '%y%m%d_%H%M%S.%f')
 duration_s = len(raw_data)/sample_rate
@@ -319,7 +317,7 @@ meta_data = {
     "listener_location": {"latitude": 0, "longitude": 0}, "location_name"
         : "67149847", "frame_delta_t": 10, "sample_rate": sample_rate, "marlin_start_time": 1408719149000,
     "marlin_end_time": 1408719159000
-}
+    }
 
 
 # --- now we have the raw data, we need to build the derived data object using marlin_data
@@ -329,75 +327,21 @@ meta_data = {
 tmp_stream = f'streamedfile_{filename_ss_id}.dat'
 tmp_meta = f'metadata_{filename_ss_id}.json'
 
+
 raw_data.tofile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{tmp_stream}')
 with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{tmp_meta}', 'w') as f:
     json.dump(meta_data, f)
 
 
 
-# split file into x second intervals
-wav_data_idx_start = 0
-wav_data_idx_end = 0
-
-print (f'sr : {sample_rate}')
-print (f'{filename}')
-
-src_data_id = filename_ss_id
-cnt = 0
-print (f'{len(raw_data)}')
-delta_f_idx = (sample_rate * s_interval)
-print (delta_f_idx)
-f_start_time = start_time
-f_start_time_dt = start_t_dt
-sim_ids = []
-
-
-while wav_data_idx_end < len(raw_data):
-    
-    f_end_time_dt = f_start_time_dt +  timedelta(seconds=s_interval)
-    f_end_time = f_end_time_dt.strftime('%y%m%d_%H%M%S.%f')
-    f_start_time = f_start_time_dt.strftime('%y%m%d_%H%M%S.%f')
-    
-    wav_data_idx_end = wav_data_idx_start + (sample_rate * s_interval)
-    tmp_stream = f'streamedfile_{src_data_id}{cnt}.dat'
-    tmp_meta = f'metadata_{filename_ss_id}{cnt}.json'
-    
-    print (f' {wav_data_idx_start} - > {wav_data_idx_end}')
-    print (f'{f_start_time} -> {f_end_time}')
-    meta_data = {
-        "snapshot_id":f'{src_data_id}{cnt}',
-        "data_frame_start": f_start_time,
-        "data_frame_end": f_end_time,
-        "listener_location": {"latitude": 0, "longitude": 0}, "location_name"
-            : "67149847", "frame_delta_t": 10, "sample_rate": sample_rate, "marlin_start_time": 1408719149000,
-        "marlin_end_time": 1408719159000
-    }
-
-    
-    
-    raw_data[wav_data_idx_start : wav_data_idx_end ].tofile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{tmp_stream}')
-    with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{tmp_meta}', 'w') as f:
-        json.dump(meta_data, f)
-        
-    wav_data_idx_start = wav_data_idx_end
-    f_start_time_dt = f_end_time_dt
-    sim_ids.append(f'{src_data_id}{cnt}')
-    
-    cnt+=1
-    
-  
-
-print (sim_ids)
-
-
 # create the data adapter
 simulation_data_path = f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp'
-data_adapter = MarlinData(load_args={'limit' : 100})
+data_adapter = MarlinData(load_args={'limit' : 10})
 
-# # load uploaded data
-# sim_ids = []
-# sim_ids = [filename_ss_id]
-limit = 200
+# load uploaded data
+sim_ids = []
+sim_ids = [filename_ss_id]
+limit = 20
 
 
 r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", "limit" : limit,  'ss_ids' : sim_ids})
@@ -415,120 +359,45 @@ print (data_adapter.simulation_index)
 
 
 
+s_id = filename_ss_id
+data_adapter.build_derived_data(n_fft=8192)
 data_avail = False
-
-
-
-if not os.path.isfile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{src_data_id}.da'):
-
-
-    s_id = filename_ss_id
-    # data_adapter.build_derived_data(n_fft=8192)
-
-    for snapshot in data_feed:
-        snapshot_derived_data = None
-        # print (snapshot.meta_data)
-        s_id = snapshot.meta_data['snapshot_id']
-        # print (f'{snapshot.meta_data}')
-        if not os.path.isfile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da'):
-            update_run(filename,1)
-            print (f'Building derived data feed structure {s_id}')
-            data_adapter.derived_data = None
-            data_adapter.build_derived_data(n_fft=8192)
-            snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot,  f_min = 115000, f_max = 145000)
-            #add to existing derived data
-            
-            data_adapter.derived_data.ft_build_band_energy_profile(sample_delta_t=0.01, simulation_data=snapshot,discrete_size = 500)
-            #add to multiple derived data holder, too
-            data_adapter.multiple_derived_data[s_id] = data_adapter.derived_data
-            
-            with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da', 'wb') as f:  # open a text file
-                pickle.dump(data_adapter.derived_data, f) # serialize the list
-
-        else:
-            update_run(filename,2)
-            data_avail = True
-            print ("Derived data already available.")
-        # # with open(f'{s_id}_.der', 'wb') as f:  # open a text file
-        # #     pickle.dump(snapshot_derived_data, f) # serialize the list
+for snapshot in data_feed:
+    # print (snapshot.meta_data)
+    s_id = snapshot.meta_data['snapshot_id']
+    # print (f'{snapshot.meta_data}')
+    if not os.path.isfile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da'):
+        update_run(filename,1)
+        print (f'Building derived data feed structure {s_id}')
+        
+        snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot,  f_min = 115000, f_max = 145000)
+        data_adapter.derived_data.ft_build_band_energy_profile(sample_delta_t=0.01, simulation_data=snapshot,discrete_size = 500)
+    else:
+        update_run(filename,2)
+        data_avail = True
+        print ("Derived data already available.")
+    # # with open(f'{s_id}_.der', 'wb') as f:  # open a text file
+    # #     pickle.dump(snapshot_derived_data, f) # serialize the list
 
 
 
 
-
-    if not data_avail:
-        update_run(filename,3)
-        print ('saving')
-        with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{src_data_id}.da', 'wb') as f:  # open a text file
-            pickle.dump(data_adapter.derived_data, f) # serialize the list
-
-else:
-    data_avail = True
+if not data_avail:
+    update_run(filename,3)
+    print ('saving')
+    with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da', 'wb') as f:  # open a text file
+        pickle.dump(data_adapter.derived_data, f) # serialize the list
 
 
-# -- old single file derived data - proved to computationally expensive
 
-# if data_avail:
-#     update_run(filename,4)
-#     print ("Loading data as saved data available.")
-#     data_adapter.derived_data = None
-#     with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{src_data_id}.da', 'rb') as f:  # open a text file
-#         tmp_derived_data = pickle.load(f) 
-#         data_adapter.derived_data = tmp_derived_data
-
-
-# Load saved derived data objects
-
-max_frequency_index = 0
-
-tmp_derived_data = None
 if data_avail:
-    
-    for active_ssid in sim_ids:
-    
-        with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{active_ssid}.da', 'rb') as f:  # open a text file
-            print (f'Building derived data : {active_ssid}')
-            data_adapter.derived_data = None
-            tmp_derived_data = pickle.load(f)
-            #tmp_derived_data.get_max_f_index()
-            data_adapter.derived_data = tmp_derived_data
-            #print(tmp_derived_data.fast_index_energy_stats)
-            
-            max_frequency_index = 0
-            for f_index, value in tmp_derived_data.fast_index_energy_stats.items():
-                max_frequency_index = max(f_index, max_frequency_index)
-            data_adapter.multiple_derived_data[active_ssid] = tmp_derived_data
-            
-            print (f'max frequency index : {max_frequency_index}')
-            print (f'{data_adapter.derived_data.fourier_delta_t}')
-            # if max_frequency_index != 59:
-            #     print (f'{active_ssid} has incorrect number of frequency indices')
-            #     exit()
-
-for feed in data_feed:
-    print (feed.start_time)
-    print (feed.end_time)
-    env_pressure_length = feed.frequency_ts_np.shape[0]
-    print (f'l : {env_pressure_length}')
-    
-# exit()
-    
-# _f = 136000
-# _t  = dt.strptime('20010101_000002.000', '%Y%m%d_%H%M%S.%f')
-
-# print ('---')
-# print (_t)
-# print ('---')
-# e , t = data_adapter.derived_data.ft_query_energy_frame(_t, _f)
-# print (f'[1] ft energy frame query at t and f : {e} @ {t}')
-# print ('---')
-# e = data_adapter.derived_data.query_stats_freq_index(40, _t)
-# print (f'[1] stats for f and t : {e}')
-# print ('---')
-
-
-
-
+    update_run(filename,4)
+    print ("Loading data as saved data available.")
+    data_adapter.derived_data = None
+    with open(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/ext_tmp/{s_id}.da', 'rb') as f:  # open a text file
+        tmp_derived_data = pickle.load(f) 
+        data_adapter.derived_data = tmp_derived_data
+        
 
 # ---- Data has been initialised -----
 
@@ -536,7 +405,7 @@ for feed in data_feed:
 # print (data_adapter.derived_data.min_freq)
 # print (data_adapter.derived_data.min_freq + (12 * (data_adapter.derived_data.index_delta_f)))
 
-
+# exit()
 
 
 algo_setup = AlgorithmSetup(config_file_path="/home/vixen/rs/dev/marlin_hp/marlin_hp/config.json")
@@ -546,7 +415,7 @@ application.ss_ids = sim_ids
 
 application.derived_data = data_adapter.derived_data 
 application.data_feed = data_feed
-application.multiple_derived_data = data_adapter.multiple_derived_data
+
 # ------------------------------------------------------------------
 #
 #   Bot(s) download for forward testing
@@ -555,7 +424,6 @@ application.multiple_derived_data = data_adapter.multiple_derived_data
 application.load_bots(target, version=feature_version, version_time_from = time_version_from,  version_time_to = time_version_to)
 # exit()
 application.mode = 1
-application.multiple_data = 1
 # create new run in db
 # send_new_run(filename, target, user_uid, location, json.dumps(shell_config))
 
@@ -596,11 +464,11 @@ if application.mode == 1:
     # print (filename)
     
     #get total time:
-    s_interval = duration_s
+    
     number_runs = math.floor(duration_s / s_interval)
     delta_idx = s_interval * sample_rate
     
-    # send_new_run(filename, target, user_uid, location, json.dumps(shell_config))
+    send_new_run(filename, target, user_uid, location, json.dumps(shell_config))
     end_idx = 0
     
     all_decisions = {}
@@ -610,29 +478,25 @@ if application.mode == 1:
     combined_active_features = {}
     
     print (f'number_runs {number_runs}')
-    # number_runs = 1
-    bot_run_time_start = t.time()
+    
     for run_i in range(0,number_runs):
         
-       
-        
+        print (f'running {run_i} iteration')
         if run_i == number_runs:
             break
         sub_filename = f'{filename}_{run_i}'
-        #send_new_run(sub_filename, target, user_uid, location, json.dumps(shell_config))
+        send_new_run(sub_filename, target, user_uid, location, json.dumps(shell_config))
         
         start_idx = end_idx
         end_idx = start_idx+delta_idx
         
         marlin_game.active_features = {}
-        marlin_game.run_bot_mt(sub_filename=sub_filename, filename=filename) #, start_idx=start_idx, end_idx=end_idx
-        
-        bot_run_time_end = t.time()
+        marlin_game.run_bot_mt(sub_filename=sub_filename, start_idx=start_idx, end_idx=end_idx)
         
         # print (marlin_game.bulk_energies)
         # print (len(marlin_game.bulk_times))
         # print (marlin_game.number_run_idx)
-        bots_run_time = bot_run_time_end - bot_run_time_start
+        
         
         for k,v in marlin_game.bulk_energies.items():
             energies_d = v
@@ -640,7 +504,8 @@ if application.mode == 1:
                 if k not in combined_bulk_energies:
                     combined_bulk_energies[k] = {}
                     
-                combined_bulk_energies[k][ke+(run_i*(marlin_game.number_run_idx+1))] = ve            
+                combined_bulk_energies[k][ke+(run_i*(marlin_game.number_run_idx+1))] = ve
+                
 
         for k,v in marlin_game.bulk_times.items():
             combined_bulk_times[k+(run_i*(marlin_game.number_run_idx+1))] = v
@@ -670,18 +535,15 @@ if application.mode == 1:
         # print (marlin_game.bulk_times)
         # layer_3 = Layer_Three(activation_level = user_activation_level,threshold_above_activation = user_threshold_above_e, derived_data = application.derived_data, similarity_threshold = user_similarity_threshold, run_id=filename, target=target)
         layer_3 = Layer_Three(activation_level = user_activation_level,threshold_above_activation = user_threshold_above_e, derived_data = application.derived_data, similarity_threshold = user_similarity_threshold, run_id=filename, target=target)
-        
-        
         freq = layer_3.run_layer(marlin_game.bulk_energies, marlin_game.bulk_times,active_features=marlin_game.active_features, all_features=list(marlin_game.game.loaded_bots.values()) )
+
         
         
         
+        with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/decisions_{sub_filename}.json', 'w') as fp:
+            json.dump(layer_3.decisions, fp)
         
-        
-        # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/decisions_{sub_filename}.json', 'w') as fp:
-        #     json.dump(layer_3.decisions, fp)
-        
-        # update_run(sub_filename,12)
+        update_run(sub_filename,12)
 
         hits = []
         decisions = layer_3.decisions
@@ -689,19 +551,15 @@ if application.mode == 1:
         print (f't: {len(marlin_game.bulk_times)}')
         print (f'd: {len(layer_3.ratio_active)}')
         print (f'c_t :{len(combined_bulk_times)}')
-        print (f'avg: {len(layer_3.avg_energies)}')
         # print (f'c_d :{len(combined_bulk_energies)}')
         
-        # for env_pressure in marlin_game.game.data_feed:
-        #     # print (env_pressure)
+        for env_pressure in marlin_game.game.data_feed:
+            # print (env_pressure)
 
-        #     build_spec_upload(env_pressure, sub_filename, hits = hits, decisions = decisions, peak=a_ratio, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq)
+            build_spec_upload(env_pressure, sub_filename, hits = hits, decisions = decisions, peak=a_ratio, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq)
                 
         
-        
-        
-        
-        # update_run(sub_filename,13)
+        update_run(sub_filename,13)
     
     
     update_run(filename,12)
@@ -718,37 +576,23 @@ if application.mode == 1:
     marlin_game.bulk_times = combined_bulk_times
     marlin_game.bulk_energies = combined_bulk_energies
     marlin_game.active_features = combined_active_features
-    # print (marlin_game.active_features)
+    print (marlin_game.active_features)
     
-    
-    # ---
-    # layer_3 = Layer_Three(activation_level = user_activation_level,threshold_above_activation = user_threshold_above_e, derived_data = application.derived_data, similarity_threshold = user_similarity_threshold, run_id=filename, target=target)
-    # freq = layer_3.run_layer(marlin_game.bulk_energies, marlin_game.bulk_times, active_features=marlin_game.active_features, all_features=list(marlin_game.game.loaded_bots.values()) )
-    
-    
-    
+    layer_3 = Layer_Three(activation_level = user_activation_level,threshold_above_activation = user_threshold_above_e, derived_data = application.derived_data, similarity_threshold = user_similarity_threshold, run_id=filename, target=target)
+    freq = layer_3.run_layer(marlin_game.bulk_energies, marlin_game.bulk_times, active_features=marlin_game.active_features, all_features=list(marlin_game.game.loaded_bots.values()) )
     # print (len(layer_3.ratio_active))
     # save game
     with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/game_{filename}.game', 'wb') as f:
         pickle.dump(marlin_game, f)
     
     
-    # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/decisions_{filename}.json', 'w') as fp:
-    #         json.dump(layer_3.decisions, fp)
-            
-    # for env_pressure in marlin_game.game.data_feed:
-    print (f'len of t = {len(marlin_game.bulk_times)}')
-    build_spec_upload(sample_rate, filename, hits = hits, decisions = layer_3.decisions, peak=layer_3.ratio_active, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq, full_raw_data=raw_data)
-            
-    
     with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/decisions_{filename}.json', 'w') as fp:
             json.dump(layer_3.decisions, fp)
-    
-     
-    
+    for env_pressure in marlin_game.game.data_feed:
+        build_spec_upload(env_pressure, filename, hits = hits, decisions = layer_3.decisions, peak=layer_3.ratio_active, avg=layer_3.avg_energies, times=marlin_game.bulk_times, pc_above_e = layer_3.pc_above_tracker, f = freq)
+            
     update_run(filename,13)
-    print (f'time to run : {bots_run_time}')    
-    
+        
     
         
         
