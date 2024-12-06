@@ -48,7 +48,7 @@ def build_spec_upload(sample_rate, game_id,  hits, decisions,peak,avg,times,pc_a
     
     start_time_dt = datetime.strptime(times[0],"%Y-%m-%dT%H:%M:%S.%fZ")
     delta_t_dt = datetime.strptime(times[1],"%Y-%m-%dT%H:%M:%S.%fZ") -  start_time_dt
-    print (delta_t_dt)
+    # print (delta_t_dt)
     
     t_len = len(times)
     print (f't dim : {t_len}')
@@ -80,8 +80,9 @@ def build_spec_upload(sample_rate, game_id,  hits, decisions,peak,avg,times,pc_a
         _t = datetime.strptime(idx['time'],"%Y-%m-%dT%H:%M:%S.%fZ")
         
         _s = _t.strftime('%-S.%f')
-        print (_s)
-        plt.plot(float(_s), 100000, 'go')
+        # print (_s)
+        _d_t = _t - start_time_dt
+        plt.plot(float(_d_t.total_seconds()), 100000, 'go')
 
     
     for time in times:
@@ -119,9 +120,9 @@ def build_spec_upload(sample_rate, game_id,  hits, decisions,peak,avg,times,pc_a
         ) 
     # print (avg)
     # print (avg_plot)
-    print (len(plot_time), len(avg_plot))
+    # print (len(plot_time), len(avg_plot))
     plt.plot(plot_time,avg_plot[0:t_len],color=pk_color)
-    print (len(plot_time), len(peak_plot))
+    # print (len(plot_time), len(peak_plot))
     plt.plot(plot_time,peak_plot[0:t_len],color=pk_color)
     plt.plot(plot_time,pc_above_e_plot[0:t_len],color=pk_color)
     plt.plot(plot_time,avg_plot_50[0:t_len],color='w')

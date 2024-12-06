@@ -78,11 +78,12 @@ class IdentGame(object):
             #data_feed.reset()
             self.bulk_energies[bot.name] = {}
             total_iter_cnt = 0
+            pressure_start = time.time()
             for env_pressure in self.game.data_feed:
                 pressure_id = env_pressure.meta_data['snapshot_id']
-                print (f'Running {pressure_id} for {bot.name}')
+                # print (f'Running {pressure_id} for {bot.name}')
                 
-                pressure_start = time.time()
+                
                 file_out = False
                 #-- build spec
                 if self.game.mode == 1 and self.game.bulk == 0:
@@ -325,9 +326,9 @@ class IdentGame(object):
                 
                 
                 
-                pressure_end = time.time()
-                run_time = pressure_end - pressure_start
-                # print (f'number iters : {idx_iter}')
+                # pressure_end = time.time()
+                # run_time = pressure_end - pressure_start
+                # # print (f'number iters : {idx_iter}')
                 # print (f'time to run [1] life : {run_time} {bot.name}')
                 # print (f'time to express : {express_time} {bot.name}')
                 outfile_name = f'{pressure_id}_{bot.name}.out' 
@@ -394,6 +395,11 @@ class IdentGame(object):
                 # --- RUN MODEL FROM WEB APP DATA
             
             
+            
+            pressure_end = time.time()
+            run_time = pressure_end - pressure_start
+            # print (f'number iters : {idx_iter}')
+            print (f'time to run [1] life : {run_time} {bot.name}')
             # print (f'{bot.name} Done')
             
             op_out = False
@@ -506,11 +512,11 @@ class IdentGame(object):
         run_n = 0
         for bot_name, bot in mt_bots.items():
             
-            print(f'run numbr : {run_n}')
+            # print(f'run numbr : {run_n}')
             # try:
-            print(f'thread id : {thread_id}')
+            # print(f'thread id : {thread_id}')
             iter_res = self.bot_step(bot,listen_start_idx = step_start_idx, step_end_index = step_end_idx)
-            print (f'bulk data counter : {len(self.bulk_energies)}')
+            # print (f'bulk data counter : {len(self.bulk_energies)}')
             # except:
             #     print ("erro")
             run_n += 1 

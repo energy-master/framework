@@ -138,12 +138,12 @@ class Layer_Three(object):
             print (_r, self.threshold_above_e)
             # if float(score_above) < float(50):
             if frame_count in active_features:
-                if float(len(active_features[frame_count])/len(all_features)) > float(self.threshold_above_e):
-                    # similarity = 1.0
+                if float(_r) > float(self.threshold_above_e):
+                    similarity = 1.0
                     # print (float(self.threshold_above_e))
                     # print (active_features)
                     # if frame_count in active_features:
-                    similarity = self.structure_match.match(features = active_features[frame_count])
+                    # similarity = self.structure_match.match(features = active_features[frame_count])
                             
             self.structure_likelyhood = similarity
             # similarity = 0.0
@@ -219,7 +219,7 @@ class harbour_porpoise_structure(object):
             # print (avg_value)
             # if max(avg_value,120000) >= 135000:
             # 120 - 140 kHz
-            print (avg_value)
+            # print (avg_value)
             if avg_value > 125000:
                 
                 likely_match = 1.0
