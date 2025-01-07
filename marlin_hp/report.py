@@ -23,7 +23,7 @@ if (len(sys.argv) > 1):
     min_f = float(sys.argv[2])
     max_f = float(sys.argv[3])
     
-    
+# git test  - 
 sim_ids = []
 for arg in range(4,len(sys.argv)):
     sim_ids.append(sys.argv[arg])

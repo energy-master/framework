@@ -523,7 +523,7 @@ print ('---')
 # print (f'max index : {num_f}')
 # print ('---')
 # print (data_adapter.multiple_derived_data)
-exit()
+
 
 
 # we now have all the active ids

@@ -612,7 +612,10 @@ for filename in batch_run_ids:
         
         
         
-            
+        
+        
+        
+        feature_f = {}
         # show init f dist
         frequency_activity = []
         for feature in list(application.loaded_bots.values()):
@@ -623,8 +626,13 @@ for filename in batch_run_ids:
                         # if 'frequency_index' in vgg:
                         idx = vgg.frequency_index
                         f = application.derived_data.min_freq + (idx *  (application.derived_data.index_delta_f))
+                        feature_f[feature.name] = f
                         frequency_activity.append(f)
-        
+
+
+
+
+
         
         filename_ = f'/home/vixen/html/rs/ident_app/ident/brahma/out/f_d_{marlin_game.game_id}_init_all.png'
         plot_hist(frequency_activity, filename_)
