@@ -2,7 +2,7 @@ import math
 from scipy.stats import norm, kurtosis, entropy
 import matplotlib.pyplot as plt
 import numpy as np
-
+import librosa
 
 # main_entropy_profile = {}
 
@@ -103,11 +103,12 @@ def build_f_profile_vector(time_s, time_e, derived_data, frequency_energy_profil
         
         stats_v = derived_data.query_stats_vector_freq_index(k, time_s, time_e)
         energy = 0
-        #print (stats_v)
-        
+        n_d = len(stats_v)
+        print (f'number of domains in vector : {n_d}')
         for domain in stats_v:
             # print (domain.stats)
             if 'max_energy' in domain.stats:
+                
                 energy = domain.stats['max_energy']   
                 max_e = max(max_e, energy)
                 if k in frequency_energy_profile:
@@ -190,4 +191,11 @@ def calculate_entropy_stats(entropy_list):
     pass
     
 # def build_entropy_stats(time, derived_data, frequency_energy_profile):
-    
+def convert_to_decibel(arr):
+    ref = 1
+    if arr!=0:
+        return 20 * np.log10(abs(arr) / ref)
+        
+    else:
+        print ('d')
+        return -60

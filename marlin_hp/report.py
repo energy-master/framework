@@ -36,7 +36,7 @@ for arg in range(4,len(sys.argv)):
     sim_ids.append(sys.argv[arg])
 
 
-active_nfft = 32768
+active_nfft = 2048 # 32768
 run_delta_t = 0.5
 derived_delta_t = 1
 location = ['brixham']
@@ -102,7 +102,7 @@ def load_data(data_adapter):
     #   limit : max number of downlaods
     #   snapshot_type : type of snapshot [ simulation | signature ]
     limit = 10
-    #r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"signature", "limit" : limit})
+    #r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", "limit" : limit, 'ss_ids' : sim_ids})
     # for ss_id in sim_ids:
     #     if os.path.isfile(f'streamedfile_{ss_id}.dat'):
     #         r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", 'ss_ids' : sim_ids,"limit" : limit})
@@ -157,18 +157,18 @@ for active_ssid in sim_ids:
             data_required.append(active_ssid)
         
             
-            
+        
 print (data_required)
 
 if len(data_required) > 0:
-
     for snapshot in data_feed:
         
         if snapshot.meta_data['snapshot_id'] in data_required:
-            print ('building...')
+            _sid = snapshot.meta_data['snapshot_id']
+            print (f'Building {_sid} derived data.')
             data_adapter.derived_data = None
             active_samplerate = snapshot.meta_data['sample_rate']
-            active_nfft = int((active_samplerate/2)) + 1
+            active_nfft = int((active_samplerate))
             f_res = math.ceil(snapshot.meta_data['sample_rate'] / active_nfft)
             
             data_adapter.build_derived_data(n_fft=active_nfft)
@@ -304,7 +304,7 @@ custom_waveform = np.concatenate(all_wf)
 
 
 # print (custom_waveform)
-# f, t, Sxx = signal.spectrogram(custom_waveform, sample_rate, nfft=2048)
+# f, t, Sxx = signal.spectrogram(custom_waveform, sample_rate,window=signal.blackman(active_nfft), nfft=active_nfft)
 # plt.pcolormesh(t, f, Sxx, shading='gouraud')
 
 # plt.ylabel('Frequency [Hz]')
@@ -312,29 +312,105 @@ custom_waveform = np.concatenate(all_wf)
 # plt.xlabel('Time [sec]')
 # plt.savefig(f'{report_out_path}/spec_{study_id}.png')
 
-total_time = custom_waveform.shape[0] / sample_rate
-print (f'total time : {total_time}')
-t = np.arange(0,total_time, 1/sample_rate)
 
-
-plt.plot(t, custom_waveform)
-plt.xlabel('Time')
-plt.ylabel('Amplitude')
-plt.savefig(f'{report_out_path}/wf_{study_id}.png')
-plt.close()
+# S = np.abs(librosa.st)
 
 n = len(custom_waveform) # length of the signal
+n = 4096
+# print ('Building fft - librosa')
+# # take the abs of the complex solution -> this is the aplitude
+# S = np.abs(librosa.stft(custom_waveform, n_fft=active_nfft))
+# # S[f][t]
+
+# print (S)
+
+print ('Building fft - np.nfft')
+Y = np.fft.fft(custom_waveform)/n
+Y = Y[:n//2]
+amplitudes =  abs(Y) 
+max_power = np.max(amplitudes)
+
+# print (f'max power : {max_power}')
+
+# print (amplitudes)
+# print (len(amplitudes))
+
+# freq = np.fft.fftfreq(n, 1/sample_rate)
+# print ('frequencies')
+# print (freq)
+
+
 k = np.arange(n)
 T = n/sample_rate
 frq = k/T # two sides frequency range
 frq = frq[:len(frq)//2] # one side frequency range
 
+xs = []
+for i in range(0,len(amplitudes)):
+    xs.append(i)
+    
+# print (xs)
+# print (len(xs))
+
+
+
+
+# frequencies = np.fft.fftfreq(active_nfft) * active_nfft * 1 / (t1 - t0)
+# print (frequencies)
+
+# S = librosa.amplitude_to_db(S**2,ref=np.max)
+# print (S)
+# S = S[:n//2]
+# # Frequency components
+# freqs = librosa.fft_frequencies(sr=sample_rate, n_fft=active_nfft)
+# print (freqs)
+
+# amplitudes = 10*np.log10(amplitudes/n)
+amplitudes=[convert_to_decibel(i) for i in amplitudes]
+# print (amplitudes)
+plt.plot(frq,amplitudes,linewidth=0.2, markersize=0.5) # plotting the spectrum
+plt.xlabel('f [Hz]')
+plt.ylabel('Power (dB)')
+# plt.xlim(0, 300000)
+# plt.ylim(-200,0)
+plt.xlim(0, 20000)
+plt.savefig(f'{report_out_path}/dbpowerprofile_{study_id}.png')
+
+# plt.savefig(f'{report_out_path}/dft_{study_id}_2000.png')
+plt.close()
+# exit()
+
+
+# plt.plot(freqs,S) # plotting the spectrum
+# plt.xlabel('Freq (Hz)')
+# plt.ylabel('dB Power')
+# plt.xlim(0, 300)
+# plt.savefig(f'{report_out_path}/dft_{study_id}_300.png')
+# plt.xlim(0, 20000)
+# plt.savefig(f'{report_out_path}/dft_{study_id}_2000.png')
+# plt.close()
+
+
+n = len(custom_waveform)
 Y = np.fft.fft(custom_waveform)/n # dft and normalization
 Y = Y[:n//2]
 
-plt.plot(frq,abs(Y)) # plotting the spectrum
-plt.xlabel('Freq (Hz)')
-plt.ylabel('|Y(freq)|')
-# plt.xlim(20, 1000)
-plt.savefig(f'{report_out_path}/dft_{study_id}.png')
+k = np.arange(n)
+T = n/sample_rate
+frq = k/T # two sides frequency range
+frq = frq[:len(frq)//2] # one side frequency range
 
+# print ('---')
+# print (len(Y))
+# Y = librosa.amplitude_to_db(np.abs(Y),ref=np.max)
+# print (Y)
+# plt.semilogy(frq,abs(Y**2)) # plotting the spectrum
+plt.plot(frq,abs(Y)) 
+plt.xlabel('f (Hz)')
+plt.ylabel('|P(freq)|')
+
+plt.xlim(0, 1000)
+plt.savefig(f'{report_out_path}/powerprofile_{study_id}.png')
+
+
+#  python3 /home/vixen/rs/dev/marlin_hp/marlin_hp/report.py 2797069 20 300 298448815225760525793106 963118742699735308517278
