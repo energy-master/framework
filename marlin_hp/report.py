@@ -25,22 +25,31 @@ import matplotlib.pyplot as plt
 load_dotenv()
 config = dotenv_values("/home/vixen/rs/dev/marlin_hp/marlin_hp/marlin_hp.env")
 
-if (len(sys.argv) > 1):
-    study_id = sys.argv[1]
-    min_f = float(sys.argv[2])
-    max_f = float(sys.argv[3])
+
+
+
+study_id = sys.argv[1]
+f_min = float(sys.argv[2])
+f_max = float(sys.argv[3])
+window_size = int(sys.argv[4])
+start_time = float(sys.argv[5])
+end_time = float(sys.argv[6])
+location_str = (sys.argv[7])
+    
     
 # git test  - 
 sim_ids = []
-for arg in range(4,len(sys.argv)):
+for arg in range(8,len(sys.argv)):
     sim_ids.append(sys.argv[arg])
 
 
-active_nfft = 2048 # 32768
+active_nfft = int(window_size)#2048 # 32768
 run_delta_t = 0.5
 derived_delta_t = 1
-location = ['brixham']
-
+# location = ['brixham']
+location = []
+location.append(location_str)
+print (location)
 # print (sim_ids, study_id)
 
 # file paths and BRAHMA -- CUSTOM --\
@@ -209,9 +218,7 @@ delta_t = run_delta_t
 study_frequency_profile = {}
 entropy_list = []
 
-min_f = 0
-max_f = 300
-delta_f = 50
+
 
 
 all_wf = []
@@ -280,6 +287,13 @@ for env_pressure in data_feed:
 
 custom_waveform = np.concatenate(all_wf)
 
+
+if start_time != -1:
+    start_index = math.floor(start_time * sample_rate)
+    end_index = math.floor(end_time * sample_rate)
+    custom_waveform = custom_waveform[start_index:end_index]
+
+
 # frequency_hist = calculate_study_frequency_profile(study_frequency_profile)
 # entropy_stats = calculate_entropy_stats(entropy_list)
 
@@ -290,7 +304,7 @@ custom_waveform = np.concatenate(all_wf)
 #     for idx, value in frequency_hist.items():
 #         f.write(f'{idx},{value}\n')
   
-        
+
 # for k,v in kurtosis_tracker.items():
 #     with open(f'{report_out_path}/kurt_{k}_{study_id}.csv', 'w') as f:
 #         f.write(f'time,kurtosis\n')
@@ -315,8 +329,9 @@ custom_waveform = np.concatenate(all_wf)
 
 # S = np.abs(librosa.st)
 
-n = len(custom_waveform) # length of the signal
-n = 4096
+# n = len(custom_waveform) # length of the signal
+n =int(min(window_size, len(custom_waveform)))
+# n = window_size
 # print ('Building fft - librosa')
 # # take the abs of the complex solution -> this is the aplitude
 # S = np.abs(librosa.stft(custom_waveform, n_fft=active_nfft))
@@ -325,6 +340,7 @@ n = 4096
 # print (S)
 
 print ('Building fft - np.nfft')
+print (f'n : {n}')
 Y = np.fft.fft(custom_waveform)/n
 Y = Y[:n//2]
 amplitudes =  abs(Y) 
@@ -367,13 +383,16 @@ for i in range(0,len(amplitudes)):
 
 # amplitudes = 10*np.log10(amplitudes/n)
 amplitudes=[convert_to_decibel(i) for i in amplitudes]
+
+duration = len(custom_waveform)/sample_rate
 # print (amplitudes)
-plt.plot(frq,amplitudes,linewidth=0.2, markersize=0.5) # plotting the spectrum
+plt.plot(frq,amplitudes,color='green',linewidth=0.1, markersize=0.5) # plotting the spectrum
 plt.xlabel('f [Hz]')
+plt.title(f'Power Spectrum (log10) ({duration}s)')
 plt.ylabel('Power (dB)')
 # plt.xlim(0, 300000)
 # plt.ylim(-200,0)
-plt.xlim(0, 20000)
+# plt.xlim(f_min, f_max)
 plt.savefig(f'{report_out_path}/dbpowerprofile_{study_id}.png')
 
 # plt.savefig(f'{report_out_path}/dft_{study_id}_2000.png')
@@ -390,7 +409,7 @@ plt.close()
 # plt.savefig(f'{report_out_path}/dft_{study_id}_2000.png')
 # plt.close()
 
-
+duration = len(custom_waveform)/sample_rate
 n = len(custom_waveform)
 Y = np.fft.fft(custom_waveform)/n # dft and normalization
 Y = Y[:n//2]
@@ -405,12 +424,22 @@ frq = frq[:len(frq)//2] # one side frequency range
 # Y = librosa.amplitude_to_db(np.abs(Y),ref=np.max)
 # print (Y)
 # plt.semilogy(frq,abs(Y**2)) # plotting the spectrum
-plt.plot(frq,abs(Y)) 
+plt.plot(frq,abs(Y),color='green',linewidth=0.1, markersize=0.5) 
+plt.title(f'Power Spectrum ({duration}s)')
 plt.xlabel('f (Hz)')
 plt.ylabel('|P(freq)|')
 
-plt.xlim(0, 1000)
+plt.xlim(f_min, f_max)
 plt.savefig(f'{report_out_path}/powerprofile_{study_id}.png')
+plt.close()
 
+# waveform
+duration = len(custom_waveform)/sample_rate
+time_vec = np.arange(0,duration,1/sample_rate) #time vector
+plt.plot(time_vec,custom_waveform,color='green', linewidth=0.1, markersize=0.5)
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
+plt.title("Waveform")
+plt.savefig(f'{report_out_path}/waveform_{study_id}.png')
 
 #  python3 /home/vixen/rs/dev/marlin_hp/marlin_hp/report.py 2797069 20 300 298448815225760525793106 963118742699735308517278
