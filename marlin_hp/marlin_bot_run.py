@@ -7,7 +7,7 @@
 #                                                                               #
 #                                                                               #
 #  c. Rahul Tandon, 2024, RSA 2024                                              #
-#  GA Game to be presented in all teams July meeting.                           #
+#  GA Game to be presented in all teams July meeting.   LIVE                    #
 ## ---------------------------------------------------------------------------- #
 import sys
 print (sys.argv[0])
@@ -176,6 +176,7 @@ class SpeciesIdent(object):
         self.mode = 0
         self.bulk = 0
         self.ss_ids = []
+        self.multiple_data = -1
     
     def generation_reset(self):
         self.performance = performance.Performance()
@@ -284,7 +285,7 @@ optimisationDataManager.dbSendNewOptimisation()
 # --------------------------------------------------------------
 
 # location / snaphsots must be an array or list of locations or ids
-location = ['67149847']
+location = ['brixham']
 if command:
     location = []
     location.append(location_str)
@@ -307,7 +308,7 @@ def download_data():
     #   limit : max number of downlaods
     #   location : location of hydrophone (must be an array)
     #   ss_ids : ids of snapshots
-    
+    print ("|----")
     print ("search ids")
     print (sim_ids)
     print ("downloading simulation data")
@@ -406,7 +407,7 @@ data_avail = False
 #
 #---------------------------------------------------------
 
-data_adapter.build_derived_data(n_fft=8192)
+data_adapter.build_derived_data(n_fft=32768)
 print ("Derived data for simulation...building")
 
 
@@ -418,8 +419,10 @@ for snapshot in data_feed_:
         
         print (f'Building derived data feed structure {s_id}')
         logging.critical(f'Building derived data feed structure {s_id}')
-        snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot, sample_delta_t=1.0, f_min = 130000, f_max = 150000)
-        data_adapter.derived_data.build_band_energy_profile(sample_delta_t=0.5, simulation_data=snapshot,discrete_size = 100)
+        # snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot, sample_delta_t=1.0, f_min = 130000, f_max = 150000)
+        snapshot_derived_data = data_adapter.derived_data.build_derived_data(simulation_data=snapshot,  f_min = 10, f_max = 500)
+        # data_adapter.derived_data.build_band_energy_profile(sample_delta_t=0.5, simulation_data=snapshot,discrete_size = 100)
+        data_adapter.derived_data.ft_build_band_energy_profile(sample_delta_t=1, simulation_data=snapshot, discrete_size = 20)
     else:
         data_avail = True
         print ("derived data already available.")
@@ -488,7 +491,7 @@ if command == True and bulk == False:
 #
 #------------------------------------------------------------------
 
-marlin_game = IdentGame(application, optimisationDataManager, activation_level = my_activation_level)
+marlin_game = IdentGame(application, optimisationDataManager, game_id = "model_run", activation_level = my_activation_level)
 
 
 if application.mode == 0:

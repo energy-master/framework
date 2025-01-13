@@ -104,14 +104,30 @@ from marlin_data import *
 simulation_data_path = "/home/vixen/rs/dev/marlin_hp/marlin_hp/data/sim"
 report_out_path = "/home/vixen/html/rs/ident_app/ident/brahma/report"
 # data load routine    
+limit = 10
+
+
+raw_data_required = []
+all_raw_present = True
+for snap_id in sim_ids:
+    if not os.path.isfile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/sim/streamedfile_{snap_id}.dat'):
+        raw_data_required.append(snap_id)
+        all_raw_present = False
+        
+print (raw_data_required)
+
 def load_data(data_adapter):
+    
+    
+    if all_raw_present:
+        
     # Load data into the marlin data adapter from a local source
     #   -params-
     #   load_path : path to local rep of serial data
     #   limit : max number of downlaods
     #   snapshot_type : type of snapshot [ simulation | signature ]
-    limit = 10
-    #r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", "limit" : limit, 'ss_ids' : sim_ids})
+   
+        r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", "limit" : limit, 'ss_ids' : sim_ids})
     # for ss_id in sim_ids:
     #     if os.path.isfile(f'streamedfile_{ss_id}.dat'):
     #         r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", 'ss_ids' : sim_ids,"limit" : limit})
@@ -119,7 +135,8 @@ def load_data(data_adapter):
     
     # download all data from server
     # print (sim_ids)
-    data_adapter.download_simulation_snapshots(load_args={'ss_ids' : sim_ids, 'location' : location})
+    else:
+        data_adapter.download_simulation_snapshots(load_args={'ss_ids' : sim_ids, 'location' : location, 'simulation_path' : simulation_data_path})
             
 
 # =================================== LOAD DATA ====================================================
@@ -143,6 +160,8 @@ data_feed = MarlinDataStreamer()
 # initilise the simulation datafeeder with downloaded data in data_adapter
 data_feed.init_data(data_adapter.simulation_data, data_adapter.simulation_index)
 
+# print (data_adapter.simulation_data, data_adapter.simulation_index)
+# exit()
 data_adapter.derived_data = None
 data_required = []
 for active_ssid in sim_ids:

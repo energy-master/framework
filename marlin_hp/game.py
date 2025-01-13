@@ -73,7 +73,7 @@ class IdentGame(object):
     
     def bot_step(self, bot = None, generation=0, listen_start_idx = 0, step_end_index = 0):
         if bot is not None:
-            # print (f'{bot.name} Start')
+            print (f'{bot.name} Start')
             # reset data feed for new iteration
             #data_feed.reset()
             self.bulk_energies[bot.name] = {}
@@ -160,7 +160,7 @@ class IdentGame(object):
                     # print (self.game.derived_data)
                     if self.game.mode == 1 and self.game.multiple_data != 1:
                         express_value = bot.ExpressDNA(data = {'data_index':listen_start_idx, 'sample_rate' : env_pressure.meta_data['sample_rate'] ,'current_data' :  env_pressure.frequency_ts_np.shape[slice_start:slice_end], 'derived_model_data' : self.game.derived_data, 'iter_start_time' : iter_start_time, 'iter_end_time' : iter_end_time})
-                        # print ('1')
+                        # print (express_value)
                     if self.game.mode == 0:
                         # sys.stdout = TracePrints()
                         # print ('2')
@@ -179,16 +179,18 @@ class IdentGame(object):
                     # print (f'ex :  {express_level}')
                     
                     energies.append(express_level)
+                    print (express_level)
                     # times.append(iter_end_time)
                     t_start_s = (slice_start / env_pressure.meta_data['sample_rate']) #
                     t_end_s = (slice_end / env_pressure.meta_data['sample_rate']) #
                     t_m = (t_start_s + t_end_s)/2                        
                     times.append(t_m)
+                    print (t_m)
                     if express_level == 0:
                         express_level = random.uniform(0.05,0.1)
                     if express_level > 0.95:
                         express_level = random.uniform(0.95,1.0)
-                        
+                    print(express_level)
                     if self.game.mode == 1 and self.game.bulk == 1:
                         # print (f'running : {idx_iter} | {bot.name}')
                         self.bulk_energies[bot.name][total_iter_cnt] = express_level
@@ -248,14 +250,14 @@ class IdentGame(object):
                             'iter_start_time' : iter_start_time,
                             'iter_end_time' : iter_end_time,
                             'action' : 1,
-                            'type' : "HP Ident",
+                            'type' : "MARLIN Ident",
                             'xr' : -1,
                             'epoch' : pressure_id
                         }
                         
                         record_decision = {
                             'env' : self.game.algo_setup.args['env'],
-                            'type' : "HP Ident",
+                            'type' : "MARLIN Ident",
                             'epoch' : pressure_id
                         }
                         
@@ -311,7 +313,7 @@ class IdentGame(object):
                             'iter_start_time' : iter_start_time,
                             'iter_end_time' : iter_end_time,
                             'action' : 0,
-                            'type' : "HP Ident",
+                            'type' : "MARLIN Ident",
                             'xr' : xr,
                             'epoch' : pressure_id
                         }
