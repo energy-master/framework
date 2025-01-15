@@ -206,6 +206,8 @@ class SpeciesIdent(object):
                 
             if  error == False:
                 number_loaded+=1
+                if number_loaded > 1000:
+                    break
                 print (f'success loading {bot_id}')
             
         
@@ -264,21 +266,21 @@ if (bulk):
     application.load_bots(filter_data)
 
 
-rprint ("Creating world")
-application.build_world()
-rprint ("World Created")
 
+rprint ("Creating world")
+# application.build_world()
+rprint ("World Created")
 
 # --------------------------------------------------------------
 # --- Optimisation Data Manager ---                                          |
 # --------------------------------------------------------------
 # print (application.algo_setup.args)
 optimisationDataManager = OptimisationDataManager(application.algo_setup.args['user'], config=application.algo_setup.args,market = application.algo_setup.args['env'], scope=application.algo_setup.args['scope'], user_uid = application.algo_setup.args['user_uid'], optimisation_id=application.algo_setup.args['run_id'])
-# print (optimisationDataManager)
-optimisationDataManager.defineDescription()
-envList = ['live']
-optimisationDataManager.setEnv(envList)
-optimisationDataManager.dbSendNewOptimisation()
+# # print (optimisationDataManager)
+# optimisationDataManager.defineDescription()
+# envList = ['live']
+# optimisationDataManager.setEnv(envList)
+# optimisationDataManager.dbSendNewOptimisation()
 
 # --------------------------------------------------------------
 # --- Data Acq ---                                       |
@@ -330,7 +332,7 @@ def load_data():
     #   snapshot_type : type of snapshot [ simulation | signature ]
    
     global data_adapter
-    logging.critical('Loading data')
+    logging.critical(f'Loading data {sim_ids}')
     #r = data_adapter.load_from_path(load_args={'load_path' : signature_data_path, "snapshot_type":"signature", "limit" : limit})
     r = data_adapter.load_from_path(load_args={'load_path' : simulation_data_path, "snapshot_type":"simulation", "limit" : limit,  'ss_ids' : sim_ids})
     
@@ -368,12 +370,17 @@ sim_load = False
 if os.path.isfile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/adapters/{ss_id}.da'):
     sim_load = True
 
+#! 
+sim_load = False
+
 # download_data()
 if command == True or len(sim_ids)>0:
-    rprint ("Downloading data.")
+    
     if sim_load:
+        rprint ("Loading data.")
         load_data()
     else:
+        rprint ("Downloading data.")
         download_data()
     #maybe add load here to save time...if data file already downlaoded
 else:

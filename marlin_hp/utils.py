@@ -9,6 +9,7 @@ from scipy.interpolate import make_interp_spline
 from scipy import signal
 from scipy.fft import fftshift
 from datetime import datetime
+import json
 """
     Game level utils
 """
@@ -368,4 +369,69 @@ def build_f_profile(data, id, bot_id):
     # plt.savefig(filepath)
     # plt.clf()
     
-  
+
+# --- input feature distribution ---
+import operator
+def shape_input(features, f_bucket_size):
+    
+    """shape_input Generate a seleceted distribution of features/bots for a simulation run.
+
+    :param features: list of features/bots
+    :type features: List[bot]
+    """
+
+    f_buckets = {}
+    f_buckets_names = {}
+    f_name_list = []
+
+    for feature, f in features.items():
+        if f not in list(f_buckets.keys()):
+            f_buckets[f] = 0
+            f_buckets_names[f] = []
+
+    t_ = 0
+    for feature, f in features.items():
+        # print (f'{feature}, {f}')
+
+        for fr, v in f_buckets.items():
+            if abs(f-fr) < f_bucket_size:
+                if fr in list(f_buckets.keys()):
+                    f_buckets[fr] += 1
+                    f_buckets_names[f].append(feature)
+                    f_name_list.append(feature)
+                    t_ += 1
+                else:
+                    f_buckets[fr] = 1
+                    f_buckets_names[f].append(feature)
+                    f_name_list.append(feature)
+                    t_ += 1
+
+    # build distribution
+    f_buckets_s = dict(sorted(f_buckets.items(), key=operator.itemgetter(0)))
+
+    min_count = 9999
+    min_f = 0
+    for fr, v in f_buckets.items():
+        if v > 2:
+            min_count = min(min_count, v)
+
+    # print(f'min count : {min_count}')
+
+    distributed_name_list = []
+    for fr, v in f_buckets.items():
+        if len(f_buckets_names[fr]) >= min_count:
+            distributed_name_list.extend(
+                random.sample(f_buckets_names[fr], min_count))
+
+    # print (f'Number of features : {len(features)}.')
+    # # print (f_buckets_s)
+    # print (f'Number counted : {t_}')
+
+    dist_data = {}
+    dist_data['ids'] = distributed_name_list
+
+    with open('feature_names.json', 'w+') as f:
+        json.dump(dist_data, f)
+
+    # print (distributed_name_list)
+    return distributed_name_list

@@ -74,6 +74,7 @@ class IdentGame(object):
     def bot_step(self, bot = None, generation=0, listen_start_idx = 0, step_end_index = 0):
         if bot is not None:
             print (f'{bot.name} Start')
+            print (bot)
             # reset data feed for new iteration
             #data_feed.reset()
             self.bulk_energies[bot.name] = {}
@@ -167,7 +168,7 @@ class IdentGame(object):
                         express_value = bot.ExpressDNA(data = {'data_index':listen_start_idx, 'sample_rate' : env_pressure.meta_data['sample_rate'] ,'current_data' :  env_pressure.frequency_ts_np.shape[slice_start:slice_end], 'derived_model_data' : self.game.multiple_derived_data[pressure_id], 'iter_start_time' : iter_start_time, 'iter_end_time' : iter_end_time})
                     
                     if self.game.mode == 1 and self.game.multiple_data == 1:    
-                        # print ('3')
+                        
                         express_value = bot.ExpressDNA(data = {'data_index':listen_start_idx, 'sample_rate' : env_pressure.meta_data['sample_rate'] ,'current_data' :  env_pressure.frequency_ts_np.shape[slice_start:slice_end], 'derived_model_data' : self.game.multiple_derived_data[pressure_id], 'iter_start_time' : iter_start_time, 'iter_end_time' : iter_end_time})
                     
                     express_end = time.time()
@@ -179,18 +180,18 @@ class IdentGame(object):
                     # print (f'ex :  {express_level}')
                     
                     energies.append(express_level)
-                    print (express_level)
+                    
                     # times.append(iter_end_time)
                     t_start_s = (slice_start / env_pressure.meta_data['sample_rate']) #
                     t_end_s = (slice_end / env_pressure.meta_data['sample_rate']) #
                     t_m = (t_start_s + t_end_s)/2                        
                     times.append(t_m)
-                    print (t_m)
+                    
                     if express_level == 0:
                         express_level = random.uniform(0.05,0.1)
                     if express_level > 0.95:
                         express_level = random.uniform(0.95,1.0)
-                    print(express_level)
+                   
                     if self.game.mode == 1 and self.game.bulk == 1:
                         # print (f'running : {idx_iter} | {bot.name}')
                         self.bulk_energies[bot.name][total_iter_cnt] = express_level
@@ -278,7 +279,7 @@ class IdentGame(object):
                         if bulk == 0:
                             
                             if self.game.mode == 0 or self.game.mode == 1 :
-                                print ('check decisions')
+                                # print ('check decisions')
                                 #--- traditional
                                 xr_hits = self.game.derived_data.query_label_time(iter_start_time, iter_end_time)
                                 if len(xr_hits) > 0:
@@ -533,7 +534,38 @@ class IdentGame(object):
         
         Q.put(res)              
                
-         
+    def run_bots(self, sub_filename="", start_idx=0, end_idx=0, filename="", out_path=""):
+        # print("*** Running Live ***")
+        self.game.generation_reset()
+
+        number_run = 0
+        self.all_decisions = {}
+        # with Progress() as progress:
+        #     process = psutil.Process(os.getpid())
+        #     task1 = progress.add_task(
+        #         f"[green] Running features/bots against your data", total=len(list(self.game.loaded_bots.keys())))
+
+        for bot_name, bot in self.game.loaded_bots.items():
+            # try:
+            iter_res = self.bot_step(
+                bot, listen_start_idx=0, step_end_index=0)
+            # except:
+            #     print ("erro")
+            # progress.update(task1, advance=1)
+
+        # dump bulk energies if exist
+        # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_energies_{self.game.ss_ids[0]}.json', 'w+') as f:
+        with open(f'{out_path}/group_energies_{self.game_id}.json', 'w+') as f:
+            json.dump(self.bulk_energies, f)
+
+        # with open(f'/home/vixen/html/rs/ident_app/ident/brahma/out/group_times_{self.game.ss_ids[0]}.json', 'w+') as f:
+        with open(f'{out_path}/group_times_{self.game_id}.json', 'w+') as f:
+            json.dump(self.bulk_times, f)
+
+        #! update
+        # update_run(self.game_id, 10)
+        # self.data_manager.closeRun(0)
+
     def run_bot(self):
         print ("Running Live")
         self.game.generation_reset()

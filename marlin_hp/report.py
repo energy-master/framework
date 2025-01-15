@@ -110,10 +110,12 @@ limit = 10
 raw_data_required = []
 all_raw_present = True
 for snap_id in sim_ids:
-    if not os.path.isfile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/sim/streamedfile_{snap_id}.dat'):
+    print (snap_id)
+    if  os.path.isfile(f'/home/vixen/rs/dev/marlin_hp/marlin_hp/data/sim/streamedfile_{snap_id}.dat') == False:
         raw_data_required.append(snap_id)
         all_raw_present = False
-        
+
+print (f'raw data present : {all_raw_present}')
 print (raw_data_required)
 
 def load_data(data_adapter):
@@ -136,6 +138,7 @@ def load_data(data_adapter):
     # download all data from server
     # print (sim_ids)
     else:
+        print ("downloading...")
         data_adapter.download_simulation_snapshots(load_args={'ss_ids' : sim_ids, 'location' : location, 'simulation_path' : simulation_data_path})
             
 
@@ -186,7 +189,7 @@ for active_ssid in sim_ids:
         
             
         
-print (data_required)
+print (f'data required : {data_required}')
 
 if len(data_required) > 0:
     for snapshot in data_feed:
