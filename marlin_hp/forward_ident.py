@@ -144,7 +144,7 @@ os.environ['NUMBA_CACHE_DIR'] = NUMBA_CACHE_DIR
 batch_file_names = []
 batch_run_ids = []
 # Input data file (Rules apply : YYYYMMDD_HHMMSS_FFF.wav)
-filename = sys.argv[1]
+run_id = sys.argv[1]
 
 # Search target (e.g. harbour_porpoise)
 target = sys.argv[2]
@@ -297,7 +297,7 @@ print (f' {num_loaded} loaded.')
 
 marlin_game = IdentGame(
     application, None, activation_level=user_activation_level)
-marlin_game.game_id = user_uid
+marlin_game.game_id = f'{user_uid}_{run_id}'
 
 
 
