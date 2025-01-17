@@ -6,10 +6,10 @@
 	"max_number_genes"		: 5,
 	"min_number_genes" 		: 4,
 	"max_dna_data_delay" 	: 10,
-	"env" 					: "vessel_alpha",
+	"env" 					: "50_hz_spike",
 	"data_location" 		: ["brixham"],
 	"number_generations" 	: 200,
-	"listen_delta_t" 		: 0.5,
+	"listen_delta_t" 		: 0.1,
 	"evaluation_class_name" : "IdentEvaluation",
 	"mutation_rate" 		: 0.7,
 	"creep_rate" 			: 0.1,
@@ -20,7 +20,7 @@
 	"user_uid" 				: "rdtandon",
 	"scope" 				: "global",
 	"save_dir" 				: "bots/",
-	"n_fft" 				: 8192,
+	"n_fft" 				: 32768,
 	"factor" 				: 1
 	
 }

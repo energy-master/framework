@@ -5,18 +5,18 @@
         "EnergyFrequencyTemporalBound" : 0,
         "EnergyIndexBound" : 0,
         "EnergyIndexBoundPC" : 0,
-        "EnergyIndexTemporalBound" : 0,
-        "EnergyIndexTemporalBoundPC" : 0,
-        "EnergyIndexFrequencyBounds" : 0,
+        "EnergyIndexTemporalBound" : 10,
+        "EnergyIndexTemporalBoundPC" : 10,
+        "EnergyIndexFrequencyBounds" : 10,
         "IndexKurtosis" : 30,
         "max_memory":4000,
         "delta_energy_min" : 0.01,
         "delta_energy_max" : 0.51,
-        "kurtosis_max" : 10,
-        "kurtosis_min" : -10,
+        "kurtosis_max" : 0,
+        "kurtosis_min" : 0,
         "f_min" : 135000,
         "f_max" : 137000,
         "f_index_min" : 0,
-        "f_index_max" : 145
+        "f_index_max" : 30
         
 }       
