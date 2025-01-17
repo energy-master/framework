@@ -21,7 +21,7 @@ A python script to:
 """
 
 
-
+root_dir = "/home/vixen/rs/dev/marlin_hp/marlin_hp"
 
 # --------------------------------------------------------------
 # --- Imports ---                                          |
@@ -119,8 +119,10 @@ signature_data_path = "/home/vixen/rs/dev/marlin_hp/marlin_hp/data/sig"
  # --- APPLICATION CONFIGURATION ---
 # open environment file
 load_dotenv()
-config = dotenv_values("config_f.env")
-with open(config['CONFIG_FILE_PATH'], 'r') as config_f:
+config = dotenv_values(f'{root_dir}/config_f.env')
+
+config_fp = config['CONFIG_FILE_PATH']
+with open(f'{root_dir}/{config_fp}', 'r') as config_f:
     app_config = json.load(config_f)
 
 # Add Application and Data paths to system path
@@ -214,10 +216,15 @@ data_feed.init_data(data_adapter.simulation_data,
 
 
 # Build / Load derived data
+all_wf = []
 saved_dd = []
+sample_rate = 0
 for snapshot in data_feed:
+    all_wf.append(snapshot.frequency_ts_np) 
     snapshot_derived_data = None
     s_id = snapshot.meta_data['snapshot_id']
+    print (snapshot.meta_data)
+    sample_rate  = snapshot.meta_data['sample_rate']
     print (f'Searching for derived data : {s_id} ...')
     if not os.path.isfile(f'{working_path}/{s_id}.da'):
         print (f'...not found so building for {s_id}.')
@@ -260,6 +267,8 @@ for snapshot in data_feed:
         
 
 
+custom_waveform = np.concatenate(all_wf)
+
 algo_setup = AlgorithmSetup(config_file_path=f'{app_path}/config.json')
 
 #--- update sim configs here ---
@@ -285,7 +294,7 @@ application.multiple_derived_data = data_adapter.multiple_derived_data
 print('Loading features / bots.')
 
 num_loaded = application.load_bots(
-            target, version=feature_version, version_time_from=time_version_from,  version_time_to=time_version_to, bot_dir=features_path, number_features=number_features, update=update_features, env=target)
+            target, version=feature_version, version_time_from=time_version_from,  version_time_to=time_version_to, bot_dir=features_path, number_features=number_features, update=update_features, env=target, root_path = root_dir)
 
 print (f' {num_loaded} loaded.')
 
@@ -363,4 +372,58 @@ marlin_game.active_features = {}
 
 marlin_game.run_bots(out_path=out_path)
 
-print (marlin_game.bulk_energies)
+# ------- Softmax API ------------
+softmax_data = {
+    
+    "target" : target,
+    "activation_threshold" : user_activation_level,
+    "threshold_above_activation": user_threshold_above_e,
+    "energies": marlin_game.bulk_energies,
+    "times": marlin_game.bulk_times,
+    "similarity_factor": user_similarity_threshold
+}
+
+print("Sending to Softmax API")
+softmax_key = "key1"
+headers = {}
+softmax_url = 'https://vixen.hopto.org/rs/api/v1/data/softmax'
+headers = {'Authorization': softmax_key, 'Accept': 'application/json', 'Content-Type': 'application/json'}
+r = requests.post(softmax_url, data=json.dumps(softmax_data), headers=headers)
+
+softmax_results = r.json()
+
+# ------- Softmax API ------------
+
+hits = []
+
+
+softmax_return_data = json.loads(softmax_results['result'][0])
+decisions = softmax_return_data['decisions']
+ratio_active = softmax_return_data['r_active']
+avg_energies = softmax_return_data['avg_energies']
+pc_above_tracker = softmax_return_data['pc_above_tracker']
+number_decisions = len(decisions)
+print (f'{number_decisions} made.')
+
+#! update
+# update_run(filename,12)
+# update_run(filename,12.1)
+
+
+#! update
+# update_run(filename,12.2)
+
+if len(marlin_game.bulk_times) > 2:
+    # print('build spec')
+    build_spec_upload(sample_rate, marlin_game.game_id, hits=hits, decisions=decisions, peak=ratio_active,
+                        avg=avg_energies, times=marlin_game.bulk_times, pc_above_e=pc_above_tracker, f=[], full_raw_data=custom_waveform)
+
+#! update
+# update_run(filename,12.4)
+with open(f'{out_path}/decisions_{marlin_game.game_id}.json', 'w') as fp:
+    json.dump(decisions, fp)
+
+#! update
+# update_run(filename,13)
+
+# --- NO EDIT END ---

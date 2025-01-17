@@ -103,7 +103,7 @@ class SpeciesIdent(object):
                 
         
 
-    def load_bots(self, filter_data, version="1_0_0", version_time_from="", version_time_to="", bot_dir="", number_features=1000, update=False, env=""):
+    def load_bots(self, filter_data, version="1_0_0", version_time_from="", version_time_to="", bot_dir="", number_features=1000, update=False, env="", root_path = ""):
         # print (filter_data)
         feature_data = None
         features_name_list = []
@@ -124,7 +124,7 @@ class SpeciesIdent(object):
 
         else:
             # print('loading features/bots list...')
-            with open('feature_list.json', 'r') as f:
+            with open(f'{root_path}/feature_list.json', 'r') as f:
                 feature_data = json.load(f)
             # print('loaded.')
             bot_ids = feature_data['ids']
@@ -156,12 +156,13 @@ class SpeciesIdent(object):
 
                 try:
                     bot = self.load_bot(bot_path)
-                    # print (bot)
+                    # print (bot.env)
                     # exit()
 
                     add = False
+                    
                     if bot.env == env:
-                        print (bot)
+                        
                         add = True
 
                     # for k,v in bot.dNA.items():
@@ -174,8 +175,9 @@ class SpeciesIdent(object):
 
                     if hasattr(bot, 'version'):
                         
-                        # print (bot.version)
+                        
                         if bot.version not in versions_list:
+                            
                             add = False
                             continue
                         else:
@@ -186,9 +188,9 @@ class SpeciesIdent(object):
                         if "1_0_0" != version:
                             add = False
                             continue
-
+                   
                     if add:
-
+                        
                         self.loaded_bots[bot_id] = bot
                         number_loaded += 1
                         # print(number_loaded)
