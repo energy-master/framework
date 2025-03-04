@@ -118,6 +118,7 @@ class IdentGame(object):
                 
                 
                 # print (env_pressure.meta_data['snapshot_id'])
+                # print (self.game.algo_setup.args['listen_delta_t'])
                 listen_delta_idx = math.floor(self.game.algo_setup.args['listen_delta_t'] * env_pressure.meta_data['sample_rate'])
                 
                 
@@ -152,7 +153,7 @@ class IdentGame(object):
                     # print (iter_start_time)
                     _s = (slice_end / env_pressure.meta_data['sample_rate']) * 1000
                     iter_end_time   =  env_pressure.start_time  + timedelta(milliseconds=_s)
-                    #print (f'time vector bounds : {iter_start_time} : {iter_end_time}')
+                    # print (f'time vector bounds : {iter_start_time} : {iter_end_time}')
                     
                     # --- express bot ---
                     # [nb. data structure is passed to individual genes if dna is initialised.

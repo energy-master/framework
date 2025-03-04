@@ -19,6 +19,24 @@ A python script to:
 
 =======================================================================================================
 """
+# ================================== timers ==================
+
+duration = {}
+def startt(name=""):
+    duration[name] = t.time()
+    
+def stopt(desc = "", name="", out=0):
+    # print (desc)
+    if name == "":
+        name = desc
+    
+    d_ = t.time() - duration[name]
+    if out == 1:
+        print (f'{desc} => {d_} (s)')
+    duration[name] = d_
+
+
+# ================================== band pass ==================
 
 
 root_dir = "/home/vixen/rs/dev/marlin_hp/marlin_hp"
@@ -192,11 +210,11 @@ if int(update_features) == -1:
 if int(update_features) == 1:
     update_features = True
 
-forwards_nfft = 32768
-forwards_min_f = 10
-forwards_max_f = 500
-forwards_dd_delta_t = 1.0
-forwards_dd_delta_f = 20
+forwards_nfft = 1024 # 65536#2048 #65536
+forwards_min_f = 70000
+forwards_max_f = 145000
+forwards_dd_delta_t = 0.001
+forwards_dd_delta_f = 1000
 
 # Create the data adapter
 limit = 200
@@ -223,30 +241,40 @@ for snapshot in data_feed:
     all_wf.append(snapshot.frequency_ts_np) 
     snapshot_derived_data = None
     s_id = snapshot.meta_data['snapshot_id']
-    print (snapshot.meta_data)
+    # print (snapshot.meta_data)
     sample_rate  = snapshot.meta_data['sample_rate']
     print (f'Searching for derived data : {s_id} ...')
+    
     if not os.path.isfile(f'{working_path}/{s_id}.da'):
+        
+        query_time_start = t.time()
         print (f'...not found so building for {s_id}.')
         data_adapter.derived_data = None
         data_adapter.build_derived_data(n_fft=forwards_nfft)
+        startt(name="build_derived_data")
         snapshot_derived_data = data_adapter.derived_data.build_derived_data(
             simulation_data=snapshot,  f_min=forwards_min_f, f_max=forwards_max_f)
-        
+        stopt(desc="build_derived_data", out=1)
         print(data_adapter.derived_data)
         
+        startt(name='build_fourier_index')
         data_adapter.derived_data.ft_build_band_energy_profile(
             sample_delta_t=forwards_dd_delta_t, simulation_data=snapshot, discrete_size=forwards_dd_delta_f)
-        
+        stopt(desc='build_fourier_index', out=1)
         data_adapter.multiple_derived_data[s_id] = data_adapter.derived_data
         derived_data_use = data_adapter.derived_data
-        
+        print (f'{s_id} derived data structure built.')
+        query_time_end = t.time()
+        query_time = query_time_end - query_time_start
+        print (f'adapter building time: {query_time}')
         with open(f'{working_path}/{s_id}.da', 'wb') as f:  # open a text file
             # serialize the list
             pickle.dump(data_adapter.derived_data, f)
             
-        print (f'{s_id} derived data structure built.')
-
+       
+        
+        print (data_adapter.derived_data)
+        data_adapter.derived_data.check_data()
         
     else:
         print ("We have derived data.")
@@ -267,9 +295,13 @@ for snapshot in data_feed:
         
 
 
+
+
 custom_waveform = np.concatenate(all_wf)
 
 algo_setup = AlgorithmSetup(config_file_path=f'{app_path}/config.json')
+
+
 
 #--- update sim configs here ---
 

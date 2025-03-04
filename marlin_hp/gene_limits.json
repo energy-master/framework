@@ -1,22 +1,36 @@
 {
-            
-        "SubBandAlpha" : 0,
-        "EnergyFrequencyBound" : 0,
-        "EnergyFrequencyTemporalBound" : 0,
-        "EnergyIndexBound" : 0,
-        "EnergyIndexBoundPC" : 0,
-        "EnergyIndexTemporalBound" : 10,
-        "EnergyIndexTemporalBoundPC" : 10,
-        "EnergyIndexFrequencyBounds" : 10,
-        "IndexKurtosis" : 30,
-        "max_memory":4000,
-        "delta_energy_min" : 0.01,
-        "delta_energy_max" : 0.51,
-        "kurtosis_max" : 0,
-        "kurtosis_min" : 0,
-        "f_min" : 135000,
-        "f_max" : 137000,
-        "f_index_min" : 0,
-        "f_index_max" : 30
         
+
+    "SubBandAlpha" : 0,
+    "EnergyFrequencyBound" : 0,
+    "EnergyFrequencyTemporalBound" : 0,
+    "EnergyIndexBound" : 0,
+    "EnergyIndexBoundPC" : 0,
+    "EnergyIndexTemporalBound" : 0,
+    "EnergyIndexTemporalBoundPC" : 0,
+    "EnergyIndexFrequencyBounds" : 0,
+    "IndexKurtosis" : 0,
+    "IndexKurtosisTemporal" : 0,
+    "EnergyProfileFluxIndex" : 0,
+    "EnergyProfileFluxIndexPersistent" : 0,
+    "EnergySpikeTemporal" : 1,
+    "min_memory":2,
+    "max_memory":500,
+    "min_memory_persistent":10,
+    "max_memory_persistent":100, 
+    "delta_energy_min" : 0.01,
+    "delta_energy_max" : 0.51,
+    "kurtosis_max" : 0,
+    "kurtosis_min" : 0,
+    "f_min" : 70000,
+    "f_max" : 145000,
+    "f_index_min" : 1,
+    "f_index_max" : 2,
+    "flux_multiple_min_pc" : 30,
+    "flux_multiple_max_pc" : 1000,
+    "spike_energy_min" : 30,
+    "spike_energy_max": 200
+    
+    
 }       
+

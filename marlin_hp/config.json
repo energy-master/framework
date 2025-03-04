@@ -1,18 +1,17 @@
 {
-	
 	"population_size"		: 100, 
 	"max_number_dna"		: 1, 
 	"min_number_dna" 		: 1,
-	"max_number_genes"		: 5,
-	"min_number_genes" 		: 4,
+	"max_number_genes"		: 1,
+	"min_number_genes" 		: 1,
 	"max_dna_data_delay" 	: 10,
-	"env" 					: "50_hz_spike",
-	"data_location" 		: ["brixham"],
-	"number_generations" 	: 200,
+	"env" 					: "harbour_porpoise",
+	"data_location" 		: ["67149847"],
+	"number_generations" 	: 100,
 	"listen_delta_t" 		: 0.1,
 	"evaluation_class_name" : "IdentEvaluation",
-	"mutation_rate" 		: 0.7,
-	"creep_rate" 			: 0.1,
+	"mutation_rate" 		: 0.3,
+	"pc_threshold_creep_rate" : 10.0,
 	"x_over_rate" 			: 0.8,
 	"user" 					: "rdtandon",
 	"market" 				: "none",
@@ -20,10 +19,21 @@
 	"user_uid" 				: "rdtandon",
 	"scope" 				: "global",
 	"save_dir" 				: "bots/",
-	"n_fft" 				: 32768,
-	"factor" 				: 1
-	
+	"n_fft" 				: 1024,
+	"factor" 				: 1,
+	"f_index_start"			: 10,
+	"f_index_end"			: 47,
+	"derived_f_min"			: 10,
+	"derived_f_max"			: 1000,
+	"name"					: "hp_classifier",
+	"feature_version"		: "1_0_0",
+	"uid"					: "0001vixen",
+	"data_min_f"			: 70000,
+	"data_max_f"			: 145000,
+	"timings"				: true,
+	"bot_path"				: "/media/marlin/Elements2/html/ident/bots_repo/hp_cmplx/"
 }
+
 
 
 
